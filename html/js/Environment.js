@@ -2,14 +2,18 @@
 var APP = APP || {};
 
 APP.Environment = function() {
-  var geometry = new THREE.BoxGeometry(20, 10, 50);
-  var textureMap = new THREE.TextureLoader().load('textures/rock_wall.jpg');
+  this.Width = 3;
+  this.Height = 2.2;
+  this.Length = 15;
+
+  var geometry = new THREE.BoxGeometry(this.Width, this.Height, this.Length);
+  var textureMap = new THREE.TextureLoader().load('textures/tunnel_wall.jpg');
   textureMap.wrapS = THREE.RepeatWrapping;
   textureMap.wrapT = THREE.RepeatWrapping;
   textureMap.repeat.set(4, 4);
-  
+
   var material = new THREE.MeshPhongMaterial({
-    color: 0xdddddd,
+    color: 0xDDDDDD,
     side: THREE.DoubleSide,
     specular: 0x222222,
     shininess: 35,
