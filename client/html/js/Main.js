@@ -5,7 +5,7 @@ var APP = APP || {};
 var PaddleDistance = 1.7; // From the camera
 
 // Variables accessible from all the methods
-var camera, scene, renderer, environment, myPaddle;
+var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
 
 // Paddle moving / raycasting
 var raycaster = new THREE.Raycaster();
@@ -38,9 +38,18 @@ function init() {
   camera.add(pointLight);
 
   // Add my paddle and position it somewhat in front of the camera
-  myPaddle = new APP.Paddle();
+  myPaddle = new APP.Paddle(APP.Paddle.Type.Mine);
   myPaddle.translateZ(cameraZ - PaddleDistance);
   scene.add(myPaddle);
+
+  // Add opponent's paddle to the other side of the environment
+  opponentPaddle = new APP.Paddle(APP.Paddle.Type.Opponent);
+  opponentPaddle.translateZ(-myPaddle.position.z);
+  scene.add(opponentPaddle);
+
+  // Add the ball
+  ball = new APP.Ball();
+  scene.add(ball);
 
   // Finally, our renderer..
   renderer = new THREE.WebGLRenderer();
