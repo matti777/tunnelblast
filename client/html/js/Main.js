@@ -4,8 +4,16 @@ var APP = APP || {};
 // Constants
 var PaddleDistance = 1.7; // From the camera
 
-// Variables accessible from all the methods
+// Threejs (graphics) scene objects
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
+
+// Physics objects
+var world, ballBody, envBody;
+
+// Misc physics variables
+var physicsLastTickTime;
+var physicsFixedTimeStep = 1.0 / 60.0; // seconds
+var physicsMaxSubSteps = 3;
 
 // Paddle moving / raycasting
 var raycaster = new THREE.Raycaster();
@@ -15,7 +23,46 @@ var intersectPoint = new THREE.Vector3();
 var intersectOffset = new THREE.Vector3();
 var draggingPaddle = false;
 
-function init() {
+function onCollision(event) {
+  console.log('Ball collision');
+}
+
+function initPhysics() {
+  world = new CANNON.World();
+  world.gravity.set(0, -1.5, 0); // m/s²
+
+  // Create a physics body for the ball
+  ballBody = new CANNON.Body({
+    mass: 1, // kg
+    material: new CANNON.Material({
+      friction: 0.0,
+      restitution: 0.999
+    }),
+    position: cannonVec3(ball.position),
+    shape: new CANNON.Sphere(ball.Radius)
+  });
+ // ballBody.linearDamping = ballBody.angularDamping = 0.4; // ?
+  ballBody.addEventListener('collide', onCollision);
+  world.addBody(ballBody);
+
+  // Create a physics body for the environment
+  //TODO replace by box for the env tunnel
+//   envBody = new CANNON.Body({
+//     mass: 0, // mass == 0 makes the body static
+// //    position: new CANNON.Vec3(0, -environment.Height / 2, 0),
+//     shape: new CANNON.Box(new CANNON.Vec3(environment.Width / 2,
+//       environment.Height / 2, environment.Length / 2))
+//   });
+//   world.addBody(envBody);
+//   console.log('box', JSON.stringify(envBody.shapes));
+
+  world.addBody(environment.physicsBody);
+
+  //TODO remove - use for testing env physics
+  ballBody.applyImpulse(new CANNON.Vec3(-0.8, 3, -2), ballBody.position);
+}
+
+function initGraphics() {
   scene = new THREE.Scene();
 
   // Create the surrounding environment (tunnel)
@@ -142,14 +189,29 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-function animate() {
+function updatePhysics(time) {
+  if (physicsLastTickTime) {
+    var dt = (time - physicsLastTickTime) / 1000;
+    world.step(physicsFixedTimeStep, dt, physicsMaxSubSteps);
+  }
+  // console.log("Sphere position: " +  ballBody.position);
+  physicsLastTickTime = time;
+
+  // Update ball position from physics
+  ball.position.copyCannonVec3(ballBody.position);
+ // ball.position.y = ballBody.position.y;
+}
+
+function animate(time) {
   // Request next frame to be drawn after this one completes
   requestAnimationFrame(animate);
 
-//    mesh.rotation.x += 0.0006;
-//    mesh.rotation.y += 0.00085;
-
   stats.begin();
+
+  // Physics tick
+  updatePhysics(time);
+
+  // Render the visuals
   render();
   stats.end();
 }
@@ -160,7 +222,10 @@ function render() {
 
 APP.main = function() {
   // Init the scene + all needed instances
-  init();
+  initGraphics();
+
+  // Init the physics
+  initPhysics();
 
   // Start animating!
   animate();
