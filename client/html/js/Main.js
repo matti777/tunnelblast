@@ -3,17 +3,16 @@ var APP = APP || {};
 
 // Constants
 var PaddleDistance = 1.7; // From the camera
+var PhysicsFixedTimeStep = 1.0 / 60.0; // Seconds. Do not change.
+var PhysicsMaxSubSteps = 3; // Do not change.
+var PhysicsGravity = -1; // m/s^2 (-9.81 to simulate real-world)
 
 // Threejs (graphics) scene objects
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
 
 // Physics objects
-var world, ballBody, envBody;
-
-// Misc physics variables
+var world;
 var physicsLastTickTime;
-var physicsFixedTimeStep = 1.0 / 60.0; // seconds
-var physicsMaxSubSteps = 3;
 
 // Paddle moving / raycasting
 var raycaster = new THREE.Raycaster();
@@ -25,41 +24,33 @@ var draggingPaddle = false;
 
 function onCollision(event) {
   console.log('Ball collision');
+
+  if (event.body.id === myPaddle.physicsBody.id) {
+    console.log('hit my paddle!', event);
+    if (event.contact.bi.id == myPaddle.physicsBody.id) {
+      console.log('I am bi');
+    }
+    if (event.contact.bj.id == myPaddle.physicsBody.id) {
+      console.log('I am bj');
+      //TODO should look at event.contact.rj to find local contact point
+    }
+  }
 }
 
 function initPhysics() {
   world = new CANNON.World();
-  world.gravity.set(0, -1.5, 0); // m/s²
+  world.gravity.set(0, PhysicsGravity, 0);
 
-  // Create a physics body for the ball
-  ballBody = new CANNON.Body({
-    mass: 1, // kg
-    material: new CANNON.Material({
-      friction: 0.0,
-      restitution: 0.999
-    }),
-    position: cannonVec3(ball.position),
-    shape: new CANNON.Sphere(ball.Radius)
-  });
- // ballBody.linearDamping = ballBody.angularDamping = 0.4; // ?
-  ballBody.addEventListener('collide', onCollision);
-  world.addBody(ballBody);
-
-  // Create a physics body for the environment
-  //TODO replace by box for the env tunnel
-//   envBody = new CANNON.Body({
-//     mass: 0, // mass == 0 makes the body static
-// //    position: new CANNON.Vec3(0, -environment.Height / 2, 0),
-//     shape: new CANNON.Box(new CANNON.Vec3(environment.Width / 2,
-//       environment.Height / 2, environment.Length / 2))
-//   });
-//   world.addBody(envBody);
-//   console.log('box', JSON.stringify(envBody.shapes));
-
+  // Add physics bodies to the simulation
+  world.addBody(ball.physicsBody);
   world.addBody(environment.physicsBody);
+  world.addBody(myPaddle.physicsBody);
+
+  // Listen to collisions between the ball and other bodies
+  ball.physicsBody.addEventListener('collide', onCollision);
 
   //TODO remove - use for testing env physics
-  ballBody.applyImpulse(new CANNON.Vec3(-0.8, 3, -2), ballBody.position);
+  ball.physicsBody.applyImpulse(new CANNON.Vec3(-0.8, 3, -2), ball.physicsBody.position);
 }
 
 function initGraphics() {
@@ -122,33 +113,7 @@ function onMouseMove(event) {
     raycaster.setFromCamera(mouse, camera);
 
     if (raycaster.ray.intersectPlane(intersectPlane, intersectPoint)) {
-      myPaddle.position.copy(intersectPoint.sub(intersectOffset));
-    }
-
-    // Bound paddle movement by the walls
-    var pw2 = (myPaddle.Width / 2);
-    var ew2 = (environment.Width / 2);
-    var ph2 = (myPaddle.Height / 2);
-    var eh2 = (environment.Height / 2);
-
-    // Left wall
-    if ((myPaddle.position.x - pw2) < -ew2) {
-      myPaddle.position.x = -ew2 + pw2;
-    }
-
-    // Right wall
-    if ((myPaddle.position.x + pw2) > ew2) {
-      myPaddle.position.x = ew2 - pw2;
-    }
-
-    // Roof
-    if ((myPaddle.position.y + ph2) > eh2) {
-      myPaddle.position.y = eh2 - ph2;
-    }
-
-    // Floor
-    if ((myPaddle.position.y - ph2) < -eh2) {
-      myPaddle.position.y = -eh2 + ph2;
+      myPaddle.moveTo(intersectPoint.sub(intersectOffset), environment);
     }
   }
 }
@@ -191,15 +156,15 @@ function onWindowResize() {
 
 function updatePhysics(time) {
   if (physicsLastTickTime) {
+    // Update (step) physics simulation
     var dt = (time - physicsLastTickTime) / 1000;
-    world.step(physicsFixedTimeStep, dt, physicsMaxSubSteps);
-  }
-  // console.log("Sphere position: " +  ballBody.position);
-  physicsLastTickTime = time;
+    world.step(PhysicsFixedTimeStep, dt, PhysicsMaxSubSteps);
 
-  // Update ball position from physics
-  ball.position.copyCannonVec3(ballBody.position);
- // ball.position.y = ballBody.position.y;
+    // Update ball position based on physics
+    ball.onPhysicsUpdated();
+  }
+
+  physicsLastTickTime = time;
 }
 
 function animate(time) {
