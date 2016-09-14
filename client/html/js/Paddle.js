@@ -10,6 +10,9 @@ APP.Paddle = function(type) {
 
   // Called when user moves the paddle
   this.moveTo = function(newPosition, environment) {
+    assert(newPosition, 'Mandatory param missing');
+    assert(environment, 'Mandatory param missing');
+
     // Bound paddle movement by the walls
     var pw2 = (this.Width / 2);
     var ew2 = (environment.Width / 2);

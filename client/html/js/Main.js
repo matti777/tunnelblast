@@ -1,11 +1,17 @@
 // Define namespace
 var APP = APP || {};
 
+APP.GameTypes = {
+  SinglePlayer: 1, Duel: 2
+};
+APP.gameType = APP.GameTypes.SinglePlayer;
+
 // Constants
 var PaddleDistance = 1.7; // From the camera
 var PhysicsFixedTimeStep = 1.0 / 60.0; // Seconds. Do not change.
 var PhysicsMaxSubSteps = 3; // Do not change.
 var PhysicsGravity = -1; // m/s^2 (-9.81 to simulate real-world)
+var BallMinZSpeed = 1; // The ball must move at least this fast in z-dir
 
 // Threejs (graphics) scene objects
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
@@ -23,17 +29,37 @@ var intersectOffset = new THREE.Vector3();
 var draggingPaddle = false;
 
 function onCollision(event) {
-  console.log('Ball collision');
+//  console.log('Ball collision');
 
-  if (event.body.id === myPaddle.physicsBody.id) {
-    console.log('hit my paddle!', event);
-    if (event.contact.bi.id == myPaddle.physicsBody.id) {
-      console.log('I am bi');
+  var myPaddleId = myPaddle.physicsBody.id;
+  var opponentPaddleId = opponentPaddle.physicsBody.id;
+
+  if (event.body.id === myPaddleId) {
+    var contact = event.contact;
+
+    // console.log('hit my paddle!', event);
+    var r = (contact.bi.id == myPaddleId) ? contact.ri : contact.rj;
+
+    var worldR = myPaddle.physicsBody.position.vadd(r);
+    var localR = myPaddle.physicsBody.pointToLocalFrame(worldR);
+    //console.log('localR', localR);
+    //TODO adjust ball velocity using localR (discard z)
+
+    // Make sure the ball has at least some z velocity
+    console.log('velocity', ball.physicsBody.velocity);
+
+    if ((ball.physicsBody.velocity.z >= 0) &&
+        (ball.physicsBody.velocity.z < BallMinZSpeed)) {
+      console.log('adjusted ball velocity');
+      ball.physicsBody.velocity.z = BallMinZSpeed;
     }
-    if (event.contact.bj.id == myPaddle.physicsBody.id) {
-      console.log('I am bj');
-      //TODO should look at event.contact.rj to find local contact point
-    }
+  } else if ((APP.gameType === APP.GameTypes.SinglePlayer) &&
+    (event.body.id === opponentPaddleId)) {
+    // We only handle physics for the opponent paddle when in singleplayer mode
+    console.log('Ball hit opponent paddle');
+    console.log('velocity', ball.physicsBody.velocity);
+
+    //TODO check same stuff as with myPaddle above
   }
 }
 
@@ -45,12 +71,13 @@ function initPhysics() {
   world.addBody(ball.physicsBody);
   world.addBody(environment.physicsBody);
   world.addBody(myPaddle.physicsBody);
+  world.addBody(opponentPaddle.physicsBody);
 
   // Listen to collisions between the ball and other bodies
   ball.physicsBody.addEventListener('collide', onCollision);
 
   //TODO remove - use for testing env physics
-  ball.physicsBody.applyImpulse(new CANNON.Vec3(-0.8, 3, -2), ball.physicsBody.position);
+  ball.physicsBody.applyImpulse(new CANNON.Vec3(-0.8, 1, 2.2), ball.physicsBody.position);
 }
 
 function initGraphics() {
@@ -66,7 +93,7 @@ function initGraphics() {
 
   // Our camera; place at the back of the environment
   var aspect = window.innerWidth / window.innerHeight;
-  camera = new THREE.PerspectiveCamera(70, aspect, 1, 1000);
+  camera = new THREE.PerspectiveCamera(70, aspect, 0.2, environment.Length);
   var cameraZ = (environment.Length / 2) - 0.5;
   camera.translateZ(cameraZ);
   scene.add(camera);
@@ -77,12 +104,14 @@ function initGraphics() {
 
   // Add my paddle and position it somewhat in front of the camera
   myPaddle = new APP.Paddle(APP.Paddle.Type.Mine);
-  myPaddle.translateZ(cameraZ - PaddleDistance);
+  var myPaddlePos = new CANNON.Vec3(0, 0, cameraZ - PaddleDistance);
+  myPaddle.moveTo(myPaddlePos, environment);
   scene.add(myPaddle);
 
   // Add opponent's paddle to the other side of the environment
   opponentPaddle = new APP.Paddle(APP.Paddle.Type.Opponent);
-  opponentPaddle.translateZ(-myPaddle.position.z);
+  var opponentPaddlePos = new CANNON.Vec3(0, 0, -myPaddle.position.z);
+  opponentPaddle.moveTo(opponentPaddlePos, environment);
   scene.add(opponentPaddle);
 
   // Add the ball
@@ -163,8 +192,25 @@ function updatePhysics(time) {
     // Update ball position based on physics
     ball.onPhysicsUpdated();
   }
+  // console.log('tick velocity', myPaddle.physicsBody.velocity);
 
   physicsLastTickTime = time;
+}
+
+function checkForScoring() {
+  // Check if ball has passed behind my paddle ie. opponent scores
+  if (ball.position.z > (myPaddle.position.z + ball.Radius)) {
+    console.log('opponent scores');
+
+    //TODO start new ball, update scores, send network update etc.
+  }
+
+  // Check if ball has passed behind the opponent paddle ie. I have scored.
+  if (ball.position.z < (opponentPaddle.position.z - ball.Radius)) {
+    console.log('I scored!');
+
+    //TODO start new ball, update scores, send network update etc.
+  }
 }
 
 function animate(time) {
@@ -178,6 +224,10 @@ function animate(time) {
 
   // Render the visuals
   render();
+
+  // Check if either player scored this frame
+  checkForScoring();
+
   stats.end();
 }
 

@@ -2,7 +2,7 @@
 var APP = APP || {};
 
 APP.Ball = function() {
-  this.Radius = 0.3;
+  this.Radius = 0.2;
 
   // Called after a physics tick. Updates the ball's position and orientation
   this.onPhysicsUpdated = function() {
