@@ -8,9 +8,7 @@ APP.gameType = APP.GameTypes.SinglePlayer;
 
 // Constants
 var PaddleDistance = 1.7; // From the camera
-var PhysicsFixedTimeStep = 1.0 / 60.0; // Seconds. Do not change.
-var PhysicsMaxSubSteps = 3; // Do not change.
-var PhysicsGravity = -0.1; // m/s^2 (-9.81 to simulate real-world)
+var PhysicsGravity = 0.0; // m/s^2 (-9.81 to simulate real-world)
 var BallMinZSpeed = 1; // The ball must move at least this fast in z-dir
 var OpponentPaddleMaxSpeed = 0.2; // m/s
 
@@ -18,8 +16,9 @@ var OpponentPaddleMaxSpeed = 0.2; // m/s
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
 
 // Physics objects
-var world;
-var lastTickTime;
+// var world;
+var physics;
+// var lastTickTime;
 
 // Paddle moving / raycasting
 var raycaster = new THREE.Raycaster();
@@ -30,80 +29,28 @@ var intersectOffset = new THREE.Vector3();
 var draggingPaddle = false;
 var opponentIntersectPlane;
 
-//TODO move this to Physics.js?
-function onCollision(event) {
-  console.log('Ball collision, velocity', ball.physicsBody.velocity.z);
 
-  //TODO since the velocity only updates AFTER the step (thus outside this callback),
-  // we must store event.contact (eg.) and process it after the physics step has finished!
 
-  var myPaddleId = myPaddle.physicsBody.id;
-  var opponentPaddleId = opponentPaddle.physicsBody.id;
 
-  if (event.body.id === myPaddleId) {
-    var contact = event.contact;
+// function initPhysics() {
+//   world = new CANNON.World();
+//   world.gravity.set(0, PhysicsGravity, 0);
+//   world.addEventListener('postStep', onWorldPostStep);
+//
+//   // Add physics bodies to the simulation
+//   world.addBody(ball.physicsBody);
+//   world.addBody(environment.physicsBody);
+//   world.addBody(myPaddle.physicsBody);
+//   world.addBody(opponentPaddle.physicsBody);
+//
+//   // Listen to collisions between the ball and other bodies
+// //  ball.physicsBody.addEventListener('collide', onCollision);
+//
+//   //TODO remove - use for testing env physics
+//   ball.physicsBody.applyImpulse(new CANNON.Vec3(0, 0, 0.8), ball.physicsBody.position);
+// }
 
-    // console.log('hit my paddle!', event);
-    var r = (contact.bi.id == myPaddleId) ? contact.ri : contact.rj;
-
-    var worldR = myPaddle.physicsBody.position.vadd(r);
-    var localR = myPaddle.physicsBody.pointToLocalFrame(worldR);
-    //console.log('localR', localR);
-    //TODO adjust ball velocity using localR (discard z)
-
-    // Make sure the ball has at least some z velocity
-    // console.log('velocity', ball.physicsBody.velocity);
-
-    if ((ball.physicsBody.velocity.z >= 0) &&
-      (ball.physicsBody.velocity.z < BallMinZSpeed)) {
-      console.log('myPaddle adjusted ball velocity');
-      ball.physicsBody.velocity.z = BallMinZSpeed;
-    }
-  } else if ((APP.gameType === APP.GameTypes.SinglePlayer) &&
-    (event.body.id === opponentPaddleId)) {
-    // We only handle physics for the opponent paddle when in singleplayer mode
-    console.log('Ball hit opponent paddle');
-    // console.log('velocity', ball.physicsBody.velocity);
-
-    //TODO check same stuff as with myPaddle above
-  }
-
-  // If hit anything else then opponent's paddle while in sinpleplayer mode,
-  // update the computer player's prediction of where the ball will hit
-  if ((APP.gameType === APP.GameTypes.SinglePlayer) &&
-    (event.body.id !== opponentPaddleId)) {
-   console.log('Correcting hit estimate..');
-    // Get the current velocity vector and use it to make direction Ray
-    var direction = new THREE.Vector3(ball.physicsBody.velocity).normalize();
-    var ray = new THREE.Ray(ball.physicsBody.position, direction);
-
-    var intersectPoint = ray.intersectPlane(opponentIntersectPlane);
-    if (intersectPoint) {
-      console.log('new intersectPoint is', intersectPoint);
-      //TODO update the computer opponents velocity = moving direction * OpponentPaddleMaxSpeed
-
-    }
-  }
-}
-
-function initPhysics() {
-  world = new CANNON.World();
-  world.gravity.set(0, PhysicsGravity, 0);
-
-  // Add physics bodies to the simulation
-  world.addBody(ball.physicsBody);
-  world.addBody(environment.physicsBody);
-  world.addBody(myPaddle.physicsBody);
-  world.addBody(opponentPaddle.physicsBody);
-
-  // Listen to collisions between the ball and other bodies
-  ball.physicsBody.addEventListener('collide', onCollision);
-
-  //TODO remove - use for testing env physics
-  ball.physicsBody.applyImpulse(new CANNON.Vec3(-0.8, 1, 1.0), ball.physicsBody.position);
-}
-
-function initGraphics() {
+function init() {
   scene = new THREE.Scene();
 
   // Create the surrounding environment (tunnel)
@@ -145,6 +92,13 @@ function initGraphics() {
   // Add the ball
   ball = new APP.Ball();
   scene.add(ball);
+
+  // Initialize physics
+  physics = new APP.Physics(PhysicsGravity, ball, myPaddle,
+    opponentPaddle, environment);
+
+  //TODO remove - use for testing env physics
+  ball.physicsBody.applyImpulse(new CANNON.Vec3(0, 0, 0.8), ball.physicsBody.position);
 
   // Finally, our renderer..
   renderer = new THREE.WebGLRenderer();
@@ -211,17 +165,6 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-function updatePhysics(time) {
-  if (lastTickTime) {
-    // Update (step) physics simulation
-    var dt = (time - lastTickTime) / 1000;
-    world.step(PhysicsFixedTimeStep, dt, PhysicsMaxSubSteps);
-
-    // Update ball position based on physics
-    ball.onPhysicsUpdated();
-  }
-}
-
 function checkForScoring() {
   // Check if ball has passed behind my paddle ie. opponent scores
   if (ball.position.z > (myPaddle.position.z + ball.Radius)) {
@@ -245,7 +188,7 @@ function animate(time) {
   stats.begin();
 
   // Physics tick
-  updatePhysics(time);
+  physics.update(time);
 
   // Render the visuals
   render();
@@ -254,8 +197,6 @@ function animate(time) {
   checkForScoring();
 
   stats.end();
-
-  lastTickTime = time;
 }
 
 function render() {
@@ -264,10 +205,7 @@ function render() {
 
 APP.main = function() {
   // Init the scene + all needed instances
-  initGraphics();
-
-  // Init the physics
-  initPhysics();
+  init();
 
   // Start animating!
   animate();

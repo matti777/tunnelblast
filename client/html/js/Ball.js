@@ -5,7 +5,7 @@ APP.Ball = function() {
   this.Radius = 0.2;
 
   // Called after a physics tick. Updates the ball's position and orientation
-  this.onPhysicsUpdated = function() {
+  this.onWorldPostStep = function() {
     this.position.copy(this.physicsBody.position);
     //TODO update orientation using quaternion
   };
