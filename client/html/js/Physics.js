@@ -4,6 +4,8 @@ var APP = APP || {};
 // Constants
 var PhysicsFixedTimeStep = 1.0 / 60.0; // Seconds. Do not change.
 var PhysicsMaxSubSteps = 3; // Do not change.
+var BallMinZSpeed = 1; // The ball must move at least this fast in z-dir
+var OpponentPaddleMaxSpeed = 0.2; // m/s
 
 APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
 
@@ -63,17 +65,82 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
 //   }
 // }
 
+  /**
+   Processes a contact with the ball and another body.
+   *
+   * @param body physics body in contact with the ball
+   * @oaram localR the contact point in body's local coordinates. undefined if
+   * the body is not one of the paddles
+   */
+  this.processContact = function(body, localR) {
+    var ballv = this.ball.physicsBody.velocity;
+    console.log('ball velocity', ballv);
+
+    if (body.id == this.myPaddle.physicsBody.id) {
+      // Adjust ball bounce angle slightly by the contact point
+      var relX = localR.x / (this.myPaddle.Width / 2);
+      ballv.x += relX;
+      var relY = localR.y / (this.myPaddle.Width / 2);
+      ballv.y += relY;
+
+      // Make sure the ball's z velocity is at least BallMinZSpeed
+      //TODO instead of doing this, rotate the vector towards Z- axis so that its length is preserved
+      if ((ball.physicsBody.velocity.z < 0) &&
+        (ball.physicsBody.velocity.z > -BallMinZSpeed)) {
+        console.log('myPaddle adjusted ball velocity');
+        ball.physicsBody.velocity.z = -BallMinZSpeed;
+      }
+    }
+
+    // If hit anything else then opponent's paddle while in sinpleplayer mode,
+    // update the computer player's prediction of where the ball will hit
+    if ((APP.gameType === APP.GameTypes.SinglePlayer) &&
+      (body.id !== this.opponentPaddle.physicsBody.id)) {
+      console.log('Correcting hit estimate..');
+      // Get the current velocity vector and use it to make direction Ray
+      var direction = new THREE.Vector3(this.ball.physicsBody.velocity).normalize();
+      var ray = new THREE.Ray(this.ball.physicsBody.position, direction);
+
+      var intersectPoint = ray.intersectPlane(this.opponentIntersectPlane);
+      if (intersectPoint) {
+        console.log('new intersectPoint is', intersectPoint);
+        //TODO update the computer opponents velocity = moving direction * OpponentPaddleMaxSpeed
+
+      }
+    }
+  }
+
   // Callback for world post step event (called each time world has updated)
   this.onWorldPostStep = function() {
-
     if (this.world.contacts.length === 0) {
       // Nothing to do
       return;
     }
 
-    //TODO move onCollision stuff here
+    // Extract the 'other' object (another being always the ball) and its r
+    var c = this.world.contacts[0];
+    var r, body;
 
-    console.log('contact; ball velocity: ', ball.physicsBody.velocity);
+    if (c.bi.id === this.ball.physicsBody.id) {
+      body = c.bj;
+      r = c.rj;
+    } else if (c.bj.id === this.ball.physicsBody.id) {
+      body = c.bi;
+      r = c.ri;
+    } else {
+      console.log('Invalid contact; ball not present!');
+      return;
+    }
+
+    if ((body.id == this.myPaddle.physicsBody.id) ||
+      (body.id === this.opponentPaddle.physicsBody.id)) {
+      // Calculate contact point in body's local coordinate space
+      var worldR = body.position.vadd(r);
+      var localR = body.pointToLocalFrame(worldR);
+      this.processContact(body, localR);
+    } else {
+      this.processContact(body);
+    }
   };
 
   // Called by the main loop to generate physics step
@@ -103,6 +170,11 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
     this.world.addBody(environment.physicsBody);
     this.world.addBody(myPaddle.physicsBody);
     this.world.addBody(opponentPaddle.physicsBody);
+
+    // Create an intersect plane for computer opponent to guess where the ball
+    // is coming. Make it match the opponent paddle's z depth.
+    this.opponentIntersectPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1),
+      -opponentPaddle.position.z);
   };
 
   this.init(gravity, ball, myPaddle, opponentPaddle, environment);

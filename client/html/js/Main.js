@@ -9,14 +9,11 @@ APP.gameType = APP.GameTypes.SinglePlayer;
 // Constants
 var PaddleDistance = 1.7; // From the camera
 var PhysicsGravity = 0.0; // m/s^2 (-9.81 to simulate real-world)
-var BallMinZSpeed = 1; // The ball must move at least this fast in z-dir
-var OpponentPaddleMaxSpeed = 0.2; // m/s
 
-// Threejs (graphics) scene objects
+// 'Globals'
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
 var input;
 var physics;
-var opponentIntersectPlane;
 
 function init() {
   scene = new THREE.Scene();
@@ -51,11 +48,6 @@ function init() {
   var opponentPaddlePos = new CANNON.Vec3(0, 0, -myPaddle.position.z);
   opponentPaddle.moveTo(opponentPaddlePos, environment);
   scene.add(opponentPaddle);
-
-  // Create an intersect plane for computer opponent to guess where the ball
-  // is coming. Make it match the opponent paddle's z depth.
-  opponentIntersectPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1),
-    -opponentPaddle.position.z);
 
   // Add the ball
   ball = new APP.Ball();

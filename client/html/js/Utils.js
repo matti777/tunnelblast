@@ -28,6 +28,12 @@ if (!Function.prototype.bind) {
   };
 }
 
+// if (!clamp) {
+//   var clamp = function(value, min, max) {
+//     return Math.min(Math.max(value, min), max);
+//   };
+// }
+
 if (!assert) {
   var assert = function (condition, message) {
     if (!condition) {
