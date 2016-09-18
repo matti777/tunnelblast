@@ -38,13 +38,13 @@ function init() {
   camera.add(pointLight);
 
   // Add my paddle and position it somewhat in front of the camera
-  myPaddle = new APP.Paddle(APP.Paddle.Type.Mine);
+  myPaddle = new APP.Paddle(APP.Paddle.Type.Mine, environment);
   var myPaddlePos = new CANNON.Vec3(0, 0, cameraZ - PaddleDistance);
   myPaddle.moveTo(myPaddlePos, environment);
   scene.add(myPaddle);
 
   // Add opponent's paddle to the other side of the environment
-  opponentPaddle = new APP.Paddle(APP.Paddle.Type.Opponent);
+  opponentPaddle = new APP.Paddle(APP.Paddle.Type.Opponent, environment);
   var opponentPaddlePos = new CANNON.Vec3(0, 0, -myPaddle.position.z);
   opponentPaddle.moveTo(opponentPaddlePos, environment);
   scene.add(opponentPaddle);

@@ -4,9 +4,7 @@ var APP = APP || {};
 // Constants
 var PhysicsFixedTimeStep = 1.0 / 60.0; // Seconds. Do not change.
 var PhysicsMaxSubSteps = 3; // Do not change.
-var BallMinZSpeed = 1; // The ball must move at least this fast in z-dir
 var BallMaxZAngle = (25 / 180) * Math.PI; // Radians
-var OpponentPaddleMaxSpeed = 0.2; // m/s
 var PositiveZAxis = new CANNON.Vec3(0, 0, 1);
 var NegativeZAxis = new CANNON.Vec3(0, 0, -1);
 
@@ -30,7 +28,7 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
       var rotationAxis = unitv.cross(axis);
       var quaternion = new CANNON.Quaternion();
       quaternion.setFromAxisAngle(rotationAxis, angleDifference);
-      var newVelocity = quaternion.vmult(ballv, this.ball.physicsBody.velocity);
+      quaternion.vmult(ballv, this.ball.physicsBody.velocity);
     }
   };
 
@@ -44,8 +42,6 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
   this.processContact = function(body, localR) {
     var ballv = this.ball.physicsBody.velocity;
     var ballp = this.ball.physicsBody.position;
-
-    // console.log('ball velocity', ballv);
 
     if (body.id == this.myPaddle.physicsBody.id) {
       // Adjust ball bounce angle slightly by the contact point
@@ -61,16 +57,13 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
     // update the computer player's prediction of where the ball will hit
     if ((APP.gameType === APP.GameTypes.SinglePlayer) &&
       (body.id !== this.opponentPaddle.physicsBody.id)) {
-      console.log('Correcting hit estimate..');
       var ray = new THREE.Ray(ballp, ballv.unit());
       var intersectPoint = ray.intersectPlane(this.opponentIntersectPlane);
-      if (intersectPoint) {
-        console.log('new intersectPoint is', intersectPoint);
-        //TODO update the computer opponents velocity = moving direction * OpponentPaddleMaxSpeed
-
-      }
+      this.opponentPaddle.setMovementTarget(intersectPoint);
+    } else {
+      this.opponentPaddle.setMovementTarget();
     }
-  }
+  };
 
   // Callback for world post step event (called each time world has updated)
   this.onWorldPostStep = function() {
@@ -113,6 +106,12 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
       this.world.step(PhysicsFixedTimeStep, dt, PhysicsMaxSubSteps);
     }
 
+    // Call this from here to ensure it is called after executing the step
+    ball.onWorldPostStep();
+    if (this.opponentPaddle.movementTarget) {
+      this.opponentPaddle.moveTowardsTarget();
+    };
+
     this.lastTickTime = time;
   };
 
@@ -125,7 +124,6 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
     this.world = new CANNON.World();
     this.world.gravity.set(0, gravity, 0);
     this.world.addEventListener('postStep', this.onWorldPostStep.bind(this));
-    this.world.addEventListener('postStep', ball.onWorldPostStep.bind(ball));
 
     // Add physics bodies to the simulation
     this.world.addBody(ball.physicsBody);
