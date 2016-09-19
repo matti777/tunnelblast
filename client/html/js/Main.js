@@ -12,6 +12,7 @@ var PhysicsGravity = 0.0; // m/s^2 (-9.81 to simulate real-world)
 
 // 'Globals'
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
+var stats;
 var input;
 var physics;
 
@@ -61,7 +62,14 @@ function init() {
   renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
-  document.body.appendChild(renderer.domElement);
+  $('#renderer').append(renderer.domElement)
+//  document.getElementById('renderer').appendChild(renderer.domElement);
+  //document.body.appendChild(renderer.domElement);
+
+  // Add a statistics panel
+  stats = new Stats();
+  stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+ // document.body.appendChild(stats.dom);
 
   // Attach input handler(s)
   input = new APP.Input(renderer, camera, myPaddle);

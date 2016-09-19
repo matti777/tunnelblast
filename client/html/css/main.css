@@ -4,3 +4,23 @@ body {
     overflow: hidden;
 }
 
+canvas {
+    position: absolute;
+    z-index: -1;
+}
+
+div.full-screen {
+    width: 100vw;
+    height: 100vh;
+}
+
+div.large-text {
+    pointer-events: none;
+    font-size: 20vh;
+    color: white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+

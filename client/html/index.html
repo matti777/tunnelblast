@@ -15,6 +15,7 @@
 <script src="js/lib/Detector.js"></script>
 <script src="js/lib/Stats.js"></script>
 <script src="js/lib/cannon.min.js"></script>
+<script src="js/lib/jquery-3.1.0.min.js"></script>
 
 <script src="js/Utils.js"></script>
 <script src="js/Input.js"></script>
@@ -26,19 +27,22 @@
 <script src="js/Physics.js"></script>
 
 <script>
-  if (!Detector.webgl) {
-    Detector.addGetWebGLMessage();
-  }
+  $(document).ready(function() {
+    if (!Detector.webgl) {
+      Detector.addGetWebGLMessage();
+    }
 
-  // Add a statistics panel
-  var stats = new Stats();
-  stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
-  document.body.appendChild(stats.dom);
-
-  // Run the app main method
-  APP.main();
-
+    // Run the app main method
+    APP.main();
+  });
 </script>
+
+<!-- This is where we're rendering our 3D scene -->
+<div id="renderer"></div>
+
+<div id="full-screen" class="full-screen">
+  <div id="large-text-container" class="large-text">1-2-3</div>
+</div>
 
 </body>
 </html>

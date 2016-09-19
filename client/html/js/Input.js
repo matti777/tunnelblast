@@ -26,6 +26,7 @@ APP.Input = function(renderer, camera, myPaddle) {
   };
 
   this.onMouseDown = function(event) {
+    console.log('mouse down');
     event.preventDefault();
 
     // Transform touch point coordinates into normalized device coordinates [-1,1]
@@ -57,9 +58,12 @@ APP.Input = function(renderer, camera, myPaddle) {
   this.camera = camera;
   this.myPaddle = myPaddle;
 
-  renderer.domElement.addEventListener('mousemove', this.onMouseMove.bind(this), false);
-  renderer.domElement.addEventListener('mousedown', this.onMouseDown.bind(this), false);
-  renderer.domElement.addEventListener('mouseup', this.onMouseUp.bind(this), false);
+//  full-screen
+  var inputElement = $('#full-screen');
+  inputElement.mousedown(this.onMouseDown.bind(this));
+  inputElement.mouseup(this.onMouseUp.bind(this));
+  inputElement.mouseout(this.onMouseUp.bind(this));
+  inputElement.mousemove(this.onMouseMove.bind(this));
 };
 
 APP.Input.constructor = APP.Input;
