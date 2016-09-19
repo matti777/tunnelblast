@@ -57,9 +57,6 @@ function init() {
   physics = new APP.Physics(PhysicsGravity, ball, myPaddle,
     opponentPaddle, environment);
 
-  //TODO remove - use for testing env physics
-  ball.physicsBody.applyImpulse(new CANNON.Vec3(0, 0, 0.8), ball.physicsBody.position);
-
   // Finally, our renderer..
   renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(window.devicePixelRatio);

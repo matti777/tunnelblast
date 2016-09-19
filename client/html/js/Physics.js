@@ -2,9 +2,11 @@
 var APP = APP || {};
 
 // Constants
+var BallSpeed = 1.5; // m/s
+var BallBounceAngleModifier = 0.45; // How much hitting side of paddle tilts bounce angle
 var PhysicsFixedTimeStep = 1.0 / 60.0; // Seconds. Do not change.
 var PhysicsMaxSubSteps = 3; // Do not change.
-var BallMaxZAngle = (25 / 180) * Math.PI; // Radians
+var BallMaxZAngle = (35 / 180) * Math.PI; // Radians
 var PositiveZAxis = new CANNON.Vec3(0, 0, 1);
 var NegativeZAxis = new CANNON.Vec3(0, 0, -1);
 
@@ -42,15 +44,26 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
   this.processContact = function(body, localR) {
     var ballv = this.ball.physicsBody.velocity;
     var ballp = this.ball.physicsBody.position;
+    var pw2 = (this.myPaddle.Width / 2);
+    var ph2 = (this.myPaddle.Height / 2);
 
-    if (body.id == this.myPaddle.physicsBody.id) {
+    if (body.id === this.myPaddle.physicsBody.id) {
       // Adjust ball bounce angle slightly by the contact point
-      var multiplier = 0.4;
-      ballv.x += ((localR.x / (this.myPaddle.Width / 2)) * multiplier);
-      ballv.y += ((localR.y / (this.myPaddle.Height / 2)) * multiplier);
+      ballv.x += ((localR.x / pw2) * BallBounceAngleModifier);
+      ballv.y += ((localR.y / ph2) * BallBounceAngleModifier);
 
       // Make sure the ball's velocity is not at too steep angle
       this.adjustBallVelocityVector(NegativeZAxis);
+    } else if (body.id === this.opponentPaddle.physicsBody.id) {
+      // Only handle opponent paddle collisions in single player mode
+      if (APP.gameType === APP.GameTypes.SinglePlayer) {
+        // Adjust ball bounce angle slightly by the contact point
+        ballv.x += ((localR.x / pw2) * BallBounceAngleModifier);
+        ballv.y += ((localR.y / ph2) * BallBounceAngleModifier);
+
+        // Make sure the ball's velocity is not at too steep angle
+        this.adjustBallVelocityVector(PositiveZAxis);
+      }
     }
 
     // If hit anything else then opponent's paddle while in sinpleplayer mode,
@@ -63,6 +76,9 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
     } else {
       this.opponentPaddle.setMovementTarget();
     }
+
+    // Make sure the ball is moving at correct speed after the contact
+    ballv.unit(ballv).scale(BallSpeed, ballv);
   };
 
   // Callback for world post step event (called each time world has updated)
@@ -135,6 +151,10 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
     // is coming. Make it match the opponent paddle's z depth.
     this.opponentIntersectPlane = new THREE.Plane(PositiveZAxis,
       -opponentPaddle.position.z);
+
+    // Give the ball its initial velocity vector
+    ball.physicsBody.velocity = new CANNON.Vec3(0, 0, BallSpeed);
+    //ball.physicsBody.applyImpulse(new CANNON.Vec3(0, 0, 0.8), ball.physicsBody.position);
   };
 
   this.init(gravity, ball, myPaddle, opponentPaddle, environment);
