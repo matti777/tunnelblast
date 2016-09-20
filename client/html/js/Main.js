@@ -13,11 +13,13 @@ var PhysicsGravity = 0.0; // m/s^2 (-9.81 to simulate real-world)
 // 'Globals'
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
 var stats;
-var input;
-var physics;
+var ui, input, physics;
 
 function init() {
   scene = new THREE.Scene();
+
+  // Create UI handler
+  ui = new APP.Ui();
 
   // Create the surrounding environment (tunnel)
   environment = new APP.Environment();
@@ -76,6 +78,14 @@ function init() {
 
   // Add event listeners
   window.addEventListener('resize', onWindowResize, false);
+
+  //TODO remove this; testing..
+  // setTimeout(function() {
+  //   ui.displayFadingLargeText('TEXT!');
+  // }, 500);
+  // setTimeout(function() {
+  //   ui.displayFadingLargeText('4-2');
+  // }, 2000);
 }
 
 function onWindowResize() {

@@ -14,9 +14,10 @@ div.full-screen {
     height: 100vh;
 }
 
-div.large-text {
+#large-text-container {
     pointer-events: none;
-    font-size: 20vh;
+    font-size: 30vh;
+    font-weight: bold;
     color: white;
     position: absolute;
     top: 50%;
@@ -24,3 +25,13 @@ div.large-text {
     transform: translate(-50%, -50%);
 }
 
+#large-text {
+    transform: scale(1);
+    transition: all 1.5s;
+    opacity: 1;
+}
+
+#large-text.animate {
+    transform: scale(0);
+    opacity: 0;
+}
