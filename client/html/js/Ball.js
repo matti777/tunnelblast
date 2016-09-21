@@ -10,6 +10,11 @@ APP.Ball = function() {
     //TODO update orientation using quaternion
   };
 
+  this.moveTo = function(location) {
+    this.position.copy(location);
+    this.physicsBody.position.copy(location);
+  };
+
   // Initialize Cannon physics
   this.initPhysics = function() {
     this.physicsBody = new CANNON.Body({

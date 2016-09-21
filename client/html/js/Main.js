@@ -1,10 +1,14 @@
 // Define namespace
 var APP = APP || {};
 
-APP.GameTypes = {
+APP.GameMode = {
   SinglePlayer: 1, Duel: 2
 };
-APP.gameType = APP.GameTypes.SinglePlayer;
+APP.gameMode = APP.GameMode.SinglePlayer;
+
+APP.Difficulty = {
+  Easy: 1, Hard: 2
+};
 
 // Constants
 var PaddleDistance = 1.7; // From the camera
@@ -54,7 +58,6 @@ function init() {
 
   // Add the ball
   ball = new APP.Ball();
-  scene.add(ball);
 
   // Initialize physics
   physics = new APP.Physics(PhysicsGravity, ball, myPaddle,
@@ -83,8 +86,38 @@ function init() {
   //   ui.displayFadingLargeText('TEXT!');
   // }, 500);
   // setTimeout(function() {
-  //   ui.displayFadingLargeText('4-2');
+  //   ui.displayFadingLargeText('4-2', 100);
   // }, 2000);
+}
+
+function showCountdownTimer(timerValue, completionCb) {
+  if (timerValue === 0) {
+    completionCb();
+  } else {
+    ui.displayFadingLargeText(timerValue, 100);
+    setTimeout(function() {
+      showCountdownTimer(timerValue - 1, completionCb);
+    }, 1000);
+  }
+}
+
+function startGame(mode, difficulty) {
+  assert(mode === APP.GameMode.SinglePlayer, 'Multiplayer not supported yet');
+  assert(difficulty === APP.Difficulty.Easy, 'Hard not supported yet');
+
+  // Reset ball position && initial velocity
+  if (!ball.parent) {
+    scene.add(ball);
+  }
+  ball.moveTo(new THREE.Vector3(0, 0, 0));
+  ui.score = {me: 0, opponent: 0};
+  ui.update();
+
+  showCountdownTimer(3, function() {
+    // Game starts!
+    // Give the ball its initial velocity vector
+    ball.physicsBody.velocity = new CANNON.Vec3(0, 0, BallSpeed);
+  });
 }
 
 function onWindowResize() {
@@ -95,18 +128,34 @@ function onWindowResize() {
 }
 
 function checkForScoring() {
+  var updateScore = function(iScored) {
+    if (iScored) {
+      ui.score.me++;
+      ui.displayFadingLargeText('You scored!', 200);
+    } else {
+      ui.score.opponent++;
+      ui.displayFadingLargeText('Opponent scored!', 200);
+    }
+
+    //TODO check here whether the game got won!
+
+    ui.update();
+    ball.moveTo(new THREE.Vector3(0, 0, 0));
+    ball.physicsBody.velocity.set(0, 0, 0);
+
+    setTimeout(function() {
+      ball.physicsBody.velocity = new CANNON.Vec3(0, 0, BallSpeed);
+    }, 1200);
+  };
+
   // Check if ball has passed behind my paddle ie. opponent scores
   if (ball.position.z > (myPaddle.position.z + ball.Radius)) {
-    console.log('opponent scores');
-
-    //TODO start new ball, update scores, send network update etc.
+    updateScore(false);
   }
 
   // Check if ball has passed behind the opponent paddle ie. I have scored.
   if (ball.position.z < (opponentPaddle.position.z - ball.Radius)) {
-    console.log('I scored!');
-
-    //TODO start new ball, update scores, send network update etc.
+    updateScore(true);
   }
 }
 
@@ -138,4 +187,9 @@ APP.main = function() {
 
   // Start animating!
   animate();
+
+  //TODO remove and do this from UI menu
+  setTimeout(function() {
+    startGame(APP.GameMode.SinglePlayer, APP.Difficulty.Easy);
+  }, 1000);
 };
