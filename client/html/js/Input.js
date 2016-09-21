@@ -9,29 +9,10 @@ var intersectOffset = new THREE.Vector3();
 var draggingPaddle = false;
 
 APP.Input = function(renderer, camera, myPaddle) {
-  this.onMouseMove = function(event) {
-    event.preventDefault();
-
-    if (draggingPaddle) {
-      // Transform touch point coordinates into normalized device coordinates [-1,1]
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-      raycaster.setFromCamera(mouse, this.camera);
-
-      if (raycaster.ray.intersectPlane(intersectPlane, intersectPoint)) {
-        this.myPaddle.moveTo(intersectPoint.sub(intersectOffset), environment);
-      }
-    }
-  };
-
-  this.onMouseDown = function(event) {
-    console.log('mouse down');
-    event.preventDefault();
-
+  this.pointerDown = function(location) {
     // Transform touch point coordinates into normalized device coordinates [-1,1]
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    mouse.x = (location.x / window.innerWidth) * 2 - 1;
+    mouse.y = -(location.y / window.innerHeight) * 2 + 1;
 
     raycaster.setFromCamera(mouse, this.camera);
 
@@ -51,19 +32,94 @@ APP.Input = function(renderer, camera, myPaddle) {
     }
   };
 
-  this.onMouseUp = function(event) {
+  this.pointerMoved = function(location) {
+    if (draggingPaddle) {
+      // Transform touch point coordinates into normalized device coordinates [-1,1]
+      mouse.x = (location.x / window.innerWidth) * 2 - 1;
+      mouse.y = -(location.y / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, this.camera);
+
+      if (raycaster.ray.intersectPlane(intersectPlane, intersectPoint)) {
+        this.myPaddle.moveTo(intersectPoint.sub(intersectOffset), environment);
+      }
+    }
+  };
+
+  this.pointerUp = function() {
     draggingPaddle = false;
+  };
+
+  this.onMouseMove = function(event) {
+    event.preventDefault();
+
+    this.pointerMoved({x: event.clientX, y: event.clientY});
+};
+
+  this.onMouseDown = function(event) {
+    event.preventDefault();
+
+    this.pointerDown({x: event.clientX, y: event.clientY});
+  };
+
+  this.onMouseUp = function(event) {
+    this.pointerUp();
+  };
+
+  function touchForId(touches, touchId) {
+    for (var i = 0; i < touches.length; i++) {
+      if (touches[i].identifier === touchId) {
+        return touches[i];
+      }
+    }
+  }
+
+  this.onTouchStart = function(event) {
+    event.preventDefault();
+
+    if (this.touchId === null) {
+      var touch = event.originalEvent.touches[0];
+      this.touchId = touch.identifier;
+      this.pointerDown({x: touch.pageX, y: touch.pageY});
+    }
+  };
+
+  this.onTouchMove = function(event) {
+    event.preventDefault();
+
+    if (this.touchId !== null) {
+      var touch = touchForId(event.originalEvent.touches, this.touchId);
+      if (touch) {
+        this.pointerMoved({x: touch.pageX, y: touch.pageY});
+      }
+    }
+  };
+
+  this.onTouchEnd = function(event) {
+    event.preventDefault();
+
+    if (this.touchId !== null) {
+      var touch = touchForId(event.originalEvent.touches, this.touchId);
+      if (!touch) {
+        this.touchId = null;
+        this.pointerUp();
+      }
+    }
   };
 
   this.camera = camera;
   this.myPaddle = myPaddle;
+  this.touchId = null;
 
-//  full-screen
   var inputElement = $('#full-screen');
   inputElement.mousedown(this.onMouseDown.bind(this));
   inputElement.mouseup(this.onMouseUp.bind(this));
   inputElement.mouseout(this.onMouseUp.bind(this));
   inputElement.mousemove(this.onMouseMove.bind(this));
+  inputElement.bind('touchstart', this.onTouchStart.bind(this));
+  inputElement.bind('touchmove', this.onTouchMove.bind(this));
+  inputElement.bind('touchend', this.onTouchEnd.bind(this));
+  inputElement.bind('touchcancel', this.onTouchEnd.bind(this));
 };
 
 APP.Input.constructor = APP.Input;

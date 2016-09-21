@@ -65,13 +65,11 @@ function init() {
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   $('#renderer').append(renderer.domElement)
-//  document.getElementById('renderer').appendChild(renderer.domElement);
-  //document.body.appendChild(renderer.domElement);
 
   // Add a statistics panel
   stats = new Stats();
   stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
- // document.body.appendChild(stats.dom);
+  document.body.appendChild(stats.dom);
 
   // Attach input handler(s)
   input = new APP.Input(renderer, camera, myPaddle);
@@ -81,6 +79,7 @@ function init() {
 
   //TODO remove this; testing..
   // setTimeout(function() {
+  //   console.log('displaying text..');
   //   ui.displayFadingLargeText('TEXT!');
   // }, 500);
   // setTimeout(function() {
