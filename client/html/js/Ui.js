@@ -24,8 +24,16 @@ APP.Ui = function() {
   };
 
   this.update = function() {
-    var text = APP.Model.score.me + " - " + APP.Model.score.opponent;
-    $('#score-container').text(text);
+    var scores = $('#score-container');
+    var text = APP.Model.myName + " " + APP.Model.score.me + " - " +
+      APP.Model.score.opponent + " " + APP.Model.opponentName;
+    scores.text(text);
+
+    if (APP.Model.gameRunning) {
+      scores.show();
+    } else {
+      scores.hide();
+    }
   };
 
   function showCountdownTimer(timerValue, completionCb) {
@@ -53,12 +61,10 @@ APP.Ui = function() {
     };
 
     if (show) {
-      // $('#menu-container').show();
-
       $('#single-player-easy').bind('click', function() {
         doStartGame(APP.GameMode.SinglePlayer, APP.Difficulty.Easy);
       });
-      $('#score-container').hide();
+    //  $('#score-container').hide();
 
       $('#full-screen').removeClass('animate-reverse');
       $('#full-screen').addClass('animate');
@@ -66,7 +72,7 @@ APP.Ui = function() {
       $('#menu-container').addClass('animate');
       $('#menu-container').css('pointer-events', 'auto');
     } else {
-      $('#score-container').show();
+     // $('#score-container').show();
 
       $('#full-screen').removeClass('animate');
       $('#full-screen').addClass('animate-reverse');

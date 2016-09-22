@@ -68,13 +68,15 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
 
     // If hit anything else then opponent's paddle while in sinpleplayer mode,
     // update the computer player's prediction of where the ball will hit
-    if ((APP.Model.gameMode === APP.GameMode.SinglePlayer) &&
-      (body.id !== this.opponentPaddle.physicsBody.id)) {
-      var ray = new THREE.Ray(ballp, ballv.unit());
-      var intersectPoint = ray.intersectPlane(this.opponentIntersectPlane);
-      this.opponentPaddle.setMovementTarget(intersectPoint);
-    } else {
-      this.opponentPaddle.setMovementTarget();
+    if (APP.Model.gameMode === APP.GameMode.SinglePlayer) {
+      if (body.id === this.opponentPaddle.physicsBody.id) {
+        // Opponent paddle hit in single player mode; start moving to center
+        this.opponentPaddle.setMovementTarget(opponentPaddleStartLocation);
+      } else {
+        var ray = new THREE.Ray(ballp, ballv.unit());
+        var intersectPoint = ray.intersectPlane(this.opponentIntersectPlane);
+        this.opponentPaddle.setMovementTarget(intersectPoint);
+      }
     }
 
     // Make sure the ball is moving at correct speed after the contact

@@ -18,6 +18,7 @@ var EndScore = 2;
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
 var stats;
 var ui, input, physics;
+var myPaddleStartLocation, opponentPaddleStartLocation;
 
 function init() {
   scene = new THREE.Scene();
@@ -48,14 +49,14 @@ function init() {
 
   // Add my paddle and position it somewhat in front of the camera
   myPaddle = new APP.Paddle(APP.Paddle.Type.Mine, environment);
-  var myPaddlePos = new CANNON.Vec3(0, 0, cameraZ - PaddleDistance);
-  myPaddle.moveTo(myPaddlePos, environment);
+  myPaddleStartLocation = new CANNON.Vec3(0, 0, cameraZ - PaddleDistance);
+  myPaddle.moveTo(myPaddleStartLocation, environment);
   scene.add(myPaddle);
 
   // Add opponent's paddle to the other side of the environment
   opponentPaddle = new APP.Paddle(APP.Paddle.Type.Opponent, environment);
-  var opponentPaddlePos = new CANNON.Vec3(0, 0, -myPaddle.position.z);
-  opponentPaddle.moveTo(opponentPaddlePos, environment);
+  opponentPaddleStartLocation = new CANNON.Vec3(0, 0, -myPaddle.position.z);
+  opponentPaddle.moveTo(opponentPaddleStartLocation, environment);
   scene.add(opponentPaddle);
 
   // Add the ball
@@ -121,10 +122,14 @@ function startGame(mode, difficulty) {
   assert(difficulty === APP.Difficulty.Easy, 'Hard not supported yet');
 
   APP.Model.gameMode = mode;
+  APP.Model.myName = 'Matti'; //TODO
+  APP.Model.opponentName = 'AI'; //TODO only for singleplayer
+  console.log('set model', APP.Model);
 
   activateBall(true);
   ball.physicsBody.velocity = new CANNON.Vec3(0, 0, BallSpeed);
   APP.Model.gameRunning = true;
+  ui.update();
 }
 
 function onWindowResize() {
@@ -141,19 +146,22 @@ function checkForScoring() {
       ui.displayFadingLargeText('You scored!', 200);
     } else {
       APP.Model.score.opponent++;
-      ui.displayFadingLargeText('Opponent scored!', 200);
+      ui.displayFadingLargeText(APP.Model.opponentName + ' scored!', 200);
     }
     ui.update();
 
+    // Move ball + paddles to their starting locations
     ball.reset();
     activateBall(false);
+    myPaddle.moveTo(myPaddleStartLocation, environment);
+    opponentPaddle.moveTo(opponentPaddleStartLocation, environment);
 
     // Check if the game was won
     var winMsg;
     if (APP.Model.score.me >= EndScore) {
       winMsg = 'You won!';
     } else if (APP.Model.score.opponent >= EndScore) {
-      winMsg = 'Opponent won!';
+      winMsg = APP.Model.opponentName + ' won!';
     }
     if (winMsg) {
       setTimeout(function() {
