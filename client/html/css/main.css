@@ -2,6 +2,7 @@ body {
     margin: 0px;
     background-color: #000000;
     overflow: hidden;
+    font-family: "Arial Black", Gadget, sans-serif;
 }
 
 canvas {
@@ -9,9 +10,37 @@ canvas {
     z-index: -1;
 }
 
-div.full-screen {
+@keyframes anim-bgcolor {
+    from {background-color: rgba(0, 0, 0, 0);}
+    to {background-color: rgba(0, 0, 0, 0.7);}
+}
+@keyframes anim-bgcolor-reverse {
+    from {background-color: rgba(0, 0, 0, 0.7);}
+    to {background-color: rgba(0, 0, 0, 0);}
+}
+@keyframes anim-opacity {
+    from {opacity: 0;}
+    to {opacity: 0.8;}
+}
+@keyframes anim-opacity-reverse {
+    from {opacity: 0.8;}
+    to {opacity: 0;}
+}
+
+#full-screen {
     width: 100vw;
     height: 100vh;
+}
+
+#full-screen.animate {
+    animation-name: anim-bgcolor;
+    animation-duration: 0.8s;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+#full-screen.animate-reverse {
+    animation-name: anim-bgcolor-reverse;
+    animation-duration: 0.8s;
 }
 
 #score-container {
@@ -28,13 +57,22 @@ div.full-screen {
 
 #large-text-container {
     pointer-events: none;
-    font-size: 30vh;
-    font-weight: bold;
-    color: white;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+}
+
+#large-text {
+    opacity: 0.7;
+    text-align: center;
+    font-size: 22vh;
+    font-weight: bold;
+    color: white;
+}
+
+#large-text.larger {
+    font-size: 50vh;
 }
 
 #large-text.animate {
@@ -42,4 +80,38 @@ div.full-screen {
     transition-timing-function: ease-in;
     transform: scale(0.1);
     opacity: 0;
+}
+
+#menu-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.7;
+}
+
+#menu-container.animate {
+    animation-name: anim-opacity;
+    animation-duration: 0.8s;
+}
+
+#menu-container.animate-reverse {
+    animation-name: anim-opacity-reverse;
+    animation-duration: 0.8s;
+    opacity: 0;
+}
+
+div.menu-button {
+    border: 2px solid rgba(255, 255, 255, .4);
+    border-radius: 5px;
+    margin: 40px 20px 40px 20px;
+    padding: 20px 10px 20px 10px;
+    font-size: 3vw;
+    font-weight: bold;
+    color: white;
+}
+
+div.menu-button:active {
+    background-color: rgba(255, 255, 255, .7);
+    color: rgba(0, 0, 0, .7)
 }

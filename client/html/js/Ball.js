@@ -10,10 +10,15 @@ APP.Ball = function() {
     //TODO update orientation using quaternion
   };
 
-  this.moveTo = function(location) {
-    this.position.copy(location);
-    this.physicsBody.position.copy(location);
-  };
+  this.reset = function() {
+    this.position.set(0, 0, 0);
+    this.physicsBody.position.set(0, 0, 0);
+    this.physicsBody.velocity.set(0, 0, 0);
+  }
+  // this.moveTo = function(location) {
+  //   this.position.copy(location);
+  //   this.physicsBody.position.copy(location);
+  // };
 
   // Initialize Cannon physics
   this.initPhysics = function() {

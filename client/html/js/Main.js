@@ -4,7 +4,6 @@ var APP = APP || {};
 APP.GameMode = {
   SinglePlayer: 1, Duel: 2
 };
-APP.gameMode = APP.GameMode.SinglePlayer;
 
 APP.Difficulty = {
   Easy: 1, Hard: 2
@@ -13,6 +12,7 @@ APP.Difficulty = {
 // Constants
 var PaddleDistance = 1.7; // From the camera
 var PhysicsGravity = 0.0; // m/s^2 (-9.81 to simulate real-world)
+var EndScore = 2;
 
 // 'Globals'
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
@@ -21,6 +21,8 @@ var ui, input, physics;
 
 function init() {
   scene = new THREE.Scene();
+
+  APP.Model = {score: {me: 0, opponent: 0}};
 
   // Create UI handler
   ui = new APP.Ui();
@@ -90,14 +92,27 @@ function init() {
   // }, 2000);
 }
 
-function showCountdownTimer(timerValue, completionCb) {
-  if (timerValue === 0) {
-    completionCb();
+function showMenu() {
+  APP.Model.gameRunning = false;
+  APP.Model.score = {me: 0, opponent: 0};
+  activateBall(false);
+  ball.reset();
+  ui.update();
+  ui.showMenu(true);
+}
+
+// Either adds or removes ball from/to 3D scene and physics world
+function activateBall(activate) {
+  if (activate) {
+    if (!ball.parent) {
+      scene.add(ball);
+    }
+    if (!ball.physicsBody.world) {
+      physics.world.addBody(ball.physicsBody);
+    }
   } else {
-    ui.displayFadingLargeText(timerValue, 100);
-    setTimeout(function() {
-      showCountdownTimer(timerValue - 1, completionCb);
-    }, 1000);
+    scene.remove(ball);
+    physics.world.removeBody(ball.physicsBody);
   }
 }
 
@@ -105,19 +120,11 @@ function startGame(mode, difficulty) {
   assert(mode === APP.GameMode.SinglePlayer, 'Multiplayer not supported yet');
   assert(difficulty === APP.Difficulty.Easy, 'Hard not supported yet');
 
-  // Reset ball position && initial velocity
-  if (!ball.parent) {
-    scene.add(ball);
-  }
-  ball.moveTo(new THREE.Vector3(0, 0, 0));
-  ui.score = {me: 0, opponent: 0};
-  ui.update();
+  APP.Model.gameMode = mode;
 
-  showCountdownTimer(3, function() {
-    // Game starts!
-    // Give the ball its initial velocity vector
-    ball.physicsBody.velocity = new CANNON.Vec3(0, 0, BallSpeed);
-  });
+  activateBall(true);
+  ball.physicsBody.velocity = new CANNON.Vec3(0, 0, BallSpeed);
+  APP.Model.gameRunning = true;
 }
 
 function onWindowResize() {
@@ -130,20 +137,41 @@ function onWindowResize() {
 function checkForScoring() {
   var updateScore = function(iScored) {
     if (iScored) {
-      ui.score.me++;
+      APP.Model.score.me++;
       ui.displayFadingLargeText('You scored!', 200);
     } else {
-      ui.score.opponent++;
+      APP.Model.score.opponent++;
       ui.displayFadingLargeText('Opponent scored!', 200);
     }
-
-    //TODO check here whether the game got won!
-
     ui.update();
-    ball.moveTo(new THREE.Vector3(0, 0, 0));
-    ball.physicsBody.velocity.set(0, 0, 0);
+
+    ball.reset();
+    activateBall(false);
+
+    // Check if the game was won
+    var winMsg;
+    if (APP.Model.score.me >= EndScore) {
+      winMsg = 'You won!';
+    } else if (APP.Model.score.opponent >= EndScore) {
+      winMsg = 'Opponent won!';
+    }
+    if (winMsg) {
+      setTimeout(function() {
+        ui.displayFadingLargeText(winMsg, 200);
+        setTimeout(function() {
+          console.log('Showing menu again..');
+          showMenu();
+        }, 1700);
+      }, 1500);
+
+      return;
+    }
+
+    // Reset the ball to the middle
+    activateBall(true);
 
     setTimeout(function() {
+      // Launch the ball again!
       ball.physicsBody.velocity = new CANNON.Vec3(0, 0, BallSpeed);
     }, 1200);
   };
@@ -160,19 +188,21 @@ function checkForScoring() {
 }
 
 function animate(time) {
-  // Request next frame to be drawn after this one completes
-  requestAnimationFrame(animate);
-
   stats.begin();
-
-  // Physics tick
-  physics.update(time);
 
   // Render the visuals
   render();
 
-  // Check if either player scored this frame
-  checkForScoring();
+  if (APP.Model.gameRunning) {
+    // Physics tick
+    physics.update(time);
+
+    // Check if either player scored this frame
+    checkForScoring();
+  }
+
+  // Request next frame to be drawn after this one completes
+  requestAnimationFrame(animate);
 
   stats.end();
 }
@@ -188,8 +218,6 @@ APP.main = function() {
   // Start animating!
   animate();
 
-  //TODO remove and do this from UI menu
-  setTimeout(function() {
-    startGame(APP.GameMode.SinglePlayer, APP.Difficulty.Easy);
-  }, 1000);
+  // Initially, show the menu
+  showMenu();
 };

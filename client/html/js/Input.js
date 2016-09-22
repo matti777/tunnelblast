@@ -10,6 +10,10 @@ var draggingPaddle = false;
 
 APP.Input = function(renderer, camera, myPaddle) {
   this.pointerDown = function(location) {
+    if (!APP.Model.gameRunning) {
+      return;
+    }
+
     // Transform touch point coordinates into normalized device coordinates [-1,1]
     mouse.x = (location.x / window.innerWidth) * 2 - 1;
     mouse.y = -(location.y / window.innerHeight) * 2 + 1;
@@ -33,6 +37,10 @@ APP.Input = function(renderer, camera, myPaddle) {
   };
 
   this.pointerMoved = function(location) {
+    if (!APP.Model.gameRunning) {
+      return;
+    }
+
     if (draggingPaddle) {
       // Transform touch point coordinates into normalized device coordinates [-1,1]
       mouse.x = (location.x / window.innerWidth) * 2 - 1;
