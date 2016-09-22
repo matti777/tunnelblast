@@ -67,8 +67,11 @@ APP.Ui = function() {
         doStartGame(APP.GameMode.SinglePlayer, APP.Difficulty.Easy);
       });
       $('#nickname-input-button').bind('click', function() {
-        APP.Model.myName = $('#nickname-input').val();
-        localStorage.setItem('myNickname', APP.Model.myName);
+        var nickname = $('#nickname-input').val();
+        if (nickname.length > 0) {
+          APP.Model.myName = nickname;
+          localStorage.setItem('myNickname', APP.Model.myName);
+        }
       });
       $('#full-screen').removeClass('animate-reverse');
       $('#full-screen').addClass('animate');
