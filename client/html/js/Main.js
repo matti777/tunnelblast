@@ -9,6 +9,8 @@ APP.Difficulty = {
   Easy: 1, Hard: 2
 };
 
+APP.Model = {score: {me: 0, opponent: 0}};
+
 // Constants
 var PaddleDistance = 1.7; // From the camera
 var PhysicsGravity = 0.0; // m/s^2 (-9.81 to simulate real-world)
@@ -22,8 +24,6 @@ var myPaddleStartLocation, opponentPaddleStartLocation;
 
 function init() {
   scene = new THREE.Scene();
-
-  APP.Model = {score: {me: 0, opponent: 0}};
 
   // Create UI handler
   ui = new APP.Ui();
@@ -91,6 +91,9 @@ function init() {
   // setTimeout(function() {
   //   ui.displayFadingLargeText('4-2', 100);
   // }, 2000);
+
+  // Update the html UI
+  ui.update();
 }
 
 function showMenu() {
@@ -122,7 +125,6 @@ function startGame(mode, difficulty) {
   assert(difficulty === APP.Difficulty.Easy, 'Hard not supported yet');
 
   APP.Model.gameMode = mode;
-  APP.Model.myName = 'Matti'; //TODO
   APP.Model.opponentName = 'AI'; //TODO only for singleplayer
   console.log('set model', APP.Model);
 
@@ -220,6 +222,13 @@ function render() {
 }
 
 APP.main = function() {
+  APP.Model.myName = localStorage.getItem('myNickname');
+  if (!APP.Model.myName || (APP.Model.myName.length < 1)) {
+    // Generate a nickname
+    APP.Model.myName = randomString(8);
+    localStorage.setItem('myNickname', APP.Model.myName);
+  }
+
   // Init the scene + all needed instances
   init();
 

@@ -34,6 +34,8 @@ APP.Ui = function() {
     } else {
       scores.hide();
     }
+
+    $('#nickname-input').val(APP.Model.myName);
   };
 
   function showCountdownTimer(timerValue, completionCb) {
@@ -64,16 +66,16 @@ APP.Ui = function() {
       $('#single-player-easy').bind('click', function() {
         doStartGame(APP.GameMode.SinglePlayer, APP.Difficulty.Easy);
       });
-    //  $('#score-container').hide();
-
+      $('#nickname-input-button').bind('click', function() {
+        APP.Model.myName = $('#nickname-input').val();
+        localStorage.setItem('myNickname', APP.Model.myName);
+      });
       $('#full-screen').removeClass('animate-reverse');
       $('#full-screen').addClass('animate');
       $('#menu-container').removeClass('animate-reverse');
       $('#menu-container').addClass('animate');
       $('#menu-container').css('pointer-events', 'auto');
     } else {
-     // $('#score-container').show();
-
       $('#full-screen').removeClass('animate');
       $('#full-screen').addClass('animate-reverse');
       $('#menu-container').removeClass('animate');

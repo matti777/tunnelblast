@@ -65,7 +65,10 @@ APP.Input = function(renderer, camera, myPaddle) {
 };
 
   this.onMouseDown = function(event) {
-    event.preventDefault();
+    var elementId = (event.target || event.srcElement).id;
+    if (elementId !== 'nickname-input') { // This hacky or what!
+      event.preventDefault();
+    }
 
     this.pointerDown({x: event.clientX, y: event.clientY});
   };
