@@ -6,7 +6,14 @@ APP.GameMode = {
 };
 
 APP.Difficulty = {
-  Easy: 1, Hard: 2
+  Easy: {
+    ballspeed: 1.6,
+    opponentPaddleSpeed: 0.2
+  },
+  Hard: {
+    ballspeed: 2.5,
+    opponentPaddleSpeed: 0.3
+  }
 };
 
 APP.Model = {score: {me: 0, opponent: 0}};
@@ -83,15 +90,6 @@ function init() {
   // Add event listeners
   window.addEventListener('resize', onWindowResize, false);
 
-  //TODO remove this; testing..
-  // setTimeout(function() {
-  //   console.log('displaying text..');
-  //   ui.displayFadingLargeText('TEXT!');
-  // }, 500);
-  // setTimeout(function() {
-  //   ui.displayFadingLargeText('4-2', 100);
-  // }, 2000);
-
   // Update the html UI
   ui.update();
 }
@@ -122,14 +120,21 @@ function activateBall(activate) {
 
 function startGame(mode, difficulty) {
   assert(mode === APP.GameMode.SinglePlayer, 'Multiplayer not supported yet');
-  assert(difficulty === APP.Difficulty.Easy, 'Hard not supported yet');
+  assert((difficulty === APP.Difficulty.Easy) ||
+    (difficulty === APP.Difficulty.Hard), 'Invalid difficulty value');
 
+  APP.Model.difficulty = difficulty;
   APP.Model.gameMode = mode;
   APP.Model.opponentName = 'AI'; //TODO only for singleplayer
-  console.log('set model', APP.Model);
+  console.log('Selected difficulty:', APP.Model.difficulty);
 
   activateBall(true);
-  ball.physicsBody.velocity = new CANNON.Vec3(0, 0, BallSpeed);
+  ball.physicsBody.velocity =
+    new CANNON.Vec3(0, 0, APP.Model.difficulty.ballspeed);
+  myPaddle.moveTo(myPaddleStartLocation, environment);
+  opponentPaddle.moveTo(opponentPaddleStartLocation, environment);
+  delete opponentPaddle.movementTarget;
+
   APP.Model.gameRunning = true;
   ui.update();
 }
@@ -157,6 +162,7 @@ function checkForScoring() {
     activateBall(false);
     myPaddle.moveTo(myPaddleStartLocation, environment);
     opponentPaddle.moveTo(opponentPaddleStartLocation, environment);
+    delete opponentPaddle.movementTarget;
 
     // Check if the game was won
     var winMsg;
@@ -166,6 +172,7 @@ function checkForScoring() {
       winMsg = APP.Model.opponentName + ' won!';
     }
     if (winMsg) {
+      APP.Model.gameRunning = false;
       setTimeout(function() {
         ui.displayFadingLargeText(winMsg, 200);
         setTimeout(function() {
@@ -182,7 +189,8 @@ function checkForScoring() {
 
     setTimeout(function() {
       // Launch the ball again!
-      ball.physicsBody.velocity = new CANNON.Vec3(0, 0, BallSpeed);
+      ball.physicsBody.velocity =
+        new CANNON.Vec3(0, 0, APP.Model.difficulty.ballspeed);
     }, 1200);
   };
 

@@ -2,11 +2,10 @@
 var APP = APP || {};
 
 // Constants
-var BallSpeed = 1.5; // m/s
-var BallBounceAngleModifier = 0.45; // How much hitting side of paddle tilts bounce angle
+var BallBounceAngleModifier = 0.5; // How much hitting side of paddle tilts bounce angle
 var PhysicsFixedTimeStep = 1.0 / 60.0; // Seconds. Do not change.
 var PhysicsMaxSubSteps = 3; // Do not change.
-var BallMaxZAngle = (35 / 180) * Math.PI; // Radians
+var BallMaxZAngle = (40 / 180) * Math.PI; // Radians
 var PositiveZAxis = new CANNON.Vec3(0, 0, 1);
 var NegativeZAxis = new CANNON.Vec3(0, 0, -1);
 
@@ -42,6 +41,8 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
    * the body is not one of the paddles
    */
   this.processContact = function(body, localR) {
+    assert(APP.Model.difficulty.ballspeed, 'Must be defined');
+
     var ballv = this.ball.physicsBody.velocity;
     var ballp = this.ball.physicsBody.position;
     var pw2 = (this.myPaddle.Width / 2);
@@ -80,7 +81,7 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
     }
 
     // Make sure the ball is moving at correct speed after the contact
-    ballv.unit(ballv).scale(BallSpeed, ballv);
+    ballv.unit(ballv).scale(APP.Model.difficulty.ballspeed, ballv);
   };
 
   // Callback for world post step event (called each time world has updated)

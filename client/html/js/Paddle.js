@@ -2,7 +2,6 @@
 var APP = APP || {};
 
 // Constants
-var OpponentPaddleSpeed = 0.2; // m/s
 
 APP.Paddle = function(type, environment) {
   assert(type, 'Type must be defined');
@@ -59,7 +58,7 @@ APP.Paddle = function(type, environment) {
     // Calculate the distance this paddle can travel this tick
     var now = new Date().getTime();
     var diff = (now - this.lastTickTime) / 1000;
-    var distance = diff * OpponentPaddleSpeed;
+    var distance = diff * APP.Model.difficulty.opponentPaddleSpeed;
 
     // Get vector from position to target
     var v = new THREE.Vector3().subVectors(this.movementTarget, this.position);
