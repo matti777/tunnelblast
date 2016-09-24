@@ -21,7 +21,7 @@ APP.Model = {score: {me: 0, opponent: 0}};
 // Constants
 var PaddleDistance = 1.7; // From the camera
 var PhysicsGravity = 0.0; // m/s^2 (-9.81 to simulate real-world)
-var EndScore = 2;
+var EndScore = 5;
 
 // 'Globals'
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;

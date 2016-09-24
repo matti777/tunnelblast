@@ -76,6 +76,49 @@ APP.Paddle = function(type, environment) {
     this.lastTickTime = now;
   };
 
+  // Adds a position sample and recalculates current speed.
+  this.updateSpeed = function() {
+    var positionSample = {
+      time: new Date().getTime(),
+      x: this.position.x,
+      y: this.position.y
+    };
+
+    this.positionSamples.push(positionSample);
+    while (this.positionSamples.length > 20) {
+      this.positionSamples.shift();
+    }
+
+    // Calculate the 'velocity vector' by calculating the paddle's movement
+    // velocity (difference in coordinates / time spent)
+    var v = {x: 0, y: 0};
+    var n = Math.min(this.positionSamples.length - 1, 6);
+    if (n < 2) {
+      this.speed = 0;
+      return;
+    }
+
+    var end = this.positionSamples.length - 1;
+    var start = end - n;
+    // console.log('start, end, n, len', start, end, n, this.positionSamples.length);
+
+    for (var i = start; i < end; i++) {
+      var s1 = this.positionSamples[i];
+      var s2 = this.positionSamples[i + 1];
+      var td = (s2.time - s1.time) / 1000; // samples' timediff in seconds
+      v.x += (s2.x - s1.x) / td; // x velocity, m/s
+      v.y += (s2.y - s1.y) / td; // y velocity, m/s
+    }
+
+    v.x /= n;
+    v.y /= n;
+
+    // Also set the velocity to the physics body to affect collisions
+    this.physicsBody.velocity.set(v.x, v.y, 0);
+
+    this.velocity = v;
+  };
+
   // Sets the target location where this (single player mode opponent's) paddle
   // should be moving. It will move according to OpponentPaddleSpeed speed
   // every time moveTowardsTarget() is called.
@@ -117,6 +160,9 @@ APP.Paddle = function(type, environment) {
 
     THREE.Mesh.call(this, geometry, material);
   };
+
+  this.positionSamples = [];
+  this.velocity = {x: 0, y: 0};
 
   this.initVisuals();
   this.initPhysics();

@@ -8,6 +8,9 @@ var PhysicsMaxSubSteps = 3; // Do not change.
 var BallMaxZAngle = (40 / 180) * Math.PI; // Radians
 var PositiveZAxis = new CANNON.Vec3(0, 0, 1);
 var NegativeZAxis = new CANNON.Vec3(0, 0, -1);
+var SpeedBoostMin = 2; // Min speed to give ballspeed boost
+var SpeedBoostModifier = 0.15;
+var MaxSpeedMultiplier = 1.75;
 
 APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
   /**
@@ -53,6 +56,13 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
       ballv.x += ((localR.x / pw2) * BallBounceAngleModifier);
       ballv.y += ((localR.y / ph2) * BallBounceAngleModifier);
 
+      var v = this.myPaddle.velocity;
+      var speed = Math.sqrt((v.x * v.x) + (v.y * v.y));
+
+      if (speed >= SpeedBoostMin) {
+        this.ball.speedMultiplier += (speed - SpeedBoostMin) * SpeedBoostModifier;
+      }
+
       // Make sure the ball's velocity is not at too steep angle
       this.adjustBallVelocityVector(NegativeZAxis);
     } else if (body.id === this.opponentPaddle.physicsBody.id) {
@@ -64,6 +74,8 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
 
         // Make sure the ball's velocity is not at too steep angle
         this.adjustBallVelocityVector(PositiveZAxis);
+
+        this.ball.speedMultiplier = 1;
       }
     }
 
@@ -81,7 +93,11 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
     }
 
     // Make sure the ball is moving at correct speed after the contact
-    ballv.unit(ballv).scale(APP.Model.difficulty.ballspeed, ballv);
+    this.ball.speedMultiplier =
+      Math.min(MaxSpeedMultiplier, this.ball.speedMultiplier);
+    console.log('speedMultiplier', this.ball.speedMultiplier);
+    var ballSpeed = APP.Model.difficulty.ballspeed * this.ball.speedMultiplier;
+    ballv.unit(ballv).scale(ballSpeed, ballv);
   };
 
   // Callback for world post step event (called each time world has updated)
@@ -125,11 +141,12 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
       this.world.step(PhysicsFixedTimeStep, dt, PhysicsMaxSubSteps);
     }
 
-    // Call this from here to ensure it is called after executing the step
+    // Call these from here to ensure it is called after executing the step
     ball.onWorldPostStep();
     if (this.opponentPaddle.movementTarget) {
       this.opponentPaddle.moveTowardsTarget();
     };
+    this.myPaddle.updateSpeed();
 
     this.lastTickTime = time;
   };

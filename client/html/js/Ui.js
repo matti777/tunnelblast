@@ -56,7 +56,7 @@ APP.Ui = function() {
       self.showMenu(false);
 
       setTimeout(function() {
-        showCountdownTimer(3, function () {
+        showCountdownTimer(1, function () {
           startGame(mode, difficulty);
         });
       }, 1000);

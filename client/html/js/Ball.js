@@ -6,19 +6,26 @@ APP.Ball = function() {
 
   // Called after a physics tick. Updates the ball's position and orientation
   this.onWorldPostStep = function() {
+    // Match the position of the physics body on the visual mesh
     this.position.copy(this.physicsBody.position);
-    //TODO update orientation using quaternion
+
+    // Match the orientation of the physics body via quaternion
+    // this.quaternion.copy(this.physicsBody.quaternion);
+   // this.matrix.makeRotationFromQuaternion(this.physicsBody.quaternion)
+    //this.matrix.makeRotationX(angle);
+    this.rotation.setFromQuaternion(this.physicsBody.quaternion);
+//    console.log('rotation', this.rotation);
+    //console.log('angle', angle);
+   // this.matrixWorldNeedsUpdate = true;
+    //console.log('quaternion: ', this.physicsBody.quaternion);
   };
 
   this.reset = function() {
+    this.speedMultiplier = 1;
     this.position.set(0, 0, 0);
     this.physicsBody.position.set(0, 0, 0);
     this.physicsBody.velocity.set(0, 0, 0);
   }
-  // this.moveTo = function(location) {
-  //   this.position.copy(location);
-  //   this.physicsBody.position.copy(location);
-  // };
 
   // Initialize Cannon physics
   this.initPhysics = function() {
@@ -35,7 +42,7 @@ APP.Ball = function() {
 
     // Initialize threejs visuals
   this.initVisuals = function() {
-    var geometry = new THREE.SphereGeometry(this.Radius, 22, 22);
+    var geometry = new THREE.SphereGeometry(this.Radius, 4, 4);
 
     var material = new THREE.MeshPhongMaterial({
       color: 0x2222FF,
@@ -44,6 +51,8 @@ APP.Ball = function() {
 
     THREE.Mesh.call(this, geometry, material);
   };
+
+  this.speedMultiplier = 1;
 
   this.initVisuals();
   this.initPhysics();
