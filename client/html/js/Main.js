@@ -26,7 +26,7 @@ var EndScore = 5;
 // 'Globals'
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
 var stats;
-var ui, input, physics;
+var ui, input, physics, networking;
 var myPaddleStartLocation, opponentPaddleStartLocation;
 
 function init() {
@@ -73,7 +73,7 @@ function init() {
   physics = new APP.Physics(PhysicsGravity, ball, myPaddle,
     opponentPaddle, environment);
 
-  // Finally, our renderer..
+  // Create our renderer..
   renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -86,6 +86,9 @@ function init() {
 
   // Attach input handler(s)
   input = new APP.Input(renderer, camera, myPaddle);
+
+  // Start Networking
+  networking = new APP.Networking();
 
   // Add event listeners
   window.addEventListener('resize', onWindowResize, false);
