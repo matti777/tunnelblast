@@ -10,21 +10,15 @@ APP.Ball = function() {
     this.position.copy(this.physicsBody.position);
 
     // Match the orientation of the physics body via quaternion
-    // this.quaternion.copy(this.physicsBody.quaternion);
-   // this.matrix.makeRotationFromQuaternion(this.physicsBody.quaternion)
-    //this.matrix.makeRotationX(angle);
     this.rotation.setFromQuaternion(this.physicsBody.quaternion);
-//    console.log('rotation', this.rotation);
-    //console.log('angle', angle);
-   // this.matrixWorldNeedsUpdate = true;
-    //console.log('quaternion: ', this.physicsBody.quaternion);
   };
 
   this.reset = function() {
     this.speedMultiplier = 1;
     this.position.set(0, 0, 0);
-    this.physicsBody.position.set(0, 0, 0);
-    this.physicsBody.velocity.set(0, 0, 0);
+    this.physicsBody.position.setZero();
+    this.physicsBody.velocity.setZero();
+    this.physicsBody.angularVelocity.setZero();
   }
 
   // Initialize Cannon physics
@@ -32,8 +26,8 @@ APP.Ball = function() {
     this.physicsBody = new CANNON.Body({
       mass: 1, // kg
       material: new CANNON.Material({
-        friction: 0.0,
-        restitution: 1.0 // Bounces with no damping
+        friction: 1,
+        restitution: 0.9 // Bounces with no damping
       }),
       position: this.getWorldPosition(),
       shape: new CANNON.Sphere(this.Radius)
@@ -42,11 +36,10 @@ APP.Ball = function() {
 
     // Initialize threejs visuals
   this.initVisuals = function() {
-    var geometry = new THREE.SphereGeometry(this.Radius, 4, 4);
+    var geometry = new THREE.SphereGeometry(this.Radius, 22, 22);
 
     var material = new THREE.MeshPhongMaterial({
-      color: 0x2222FF,
-      opacity: 0.8
+      map: new THREE.TextureLoader().load('textures/ball.jpg')
     });
 
     THREE.Mesh.call(this, geometry, material);

@@ -100,7 +100,6 @@ APP.Paddle = function(type, environment) {
 
     var end = this.positionSamples.length - 1;
     var start = end - n;
-    // console.log('start, end, n, len', start, end, n, this.positionSamples.length);
 
     for (var i = start; i < end; i++) {
       var s1 = this.positionSamples[i];
@@ -115,8 +114,6 @@ APP.Paddle = function(type, environment) {
 
     // Also set the velocity to the physics body to affect collisions
     this.physicsBody.velocity.set(v.x, v.y, 0);
-
-    this.velocity = v;
   };
 
   // Sets the target location where this (single player mode opponent's) paddle
@@ -162,7 +159,6 @@ APP.Paddle = function(type, environment) {
   };
 
   this.positionSamples = [];
-  this.velocity = {x: 0, y: 0};
 
   this.initVisuals();
   this.initPhysics();

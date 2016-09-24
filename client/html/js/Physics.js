@@ -40,25 +40,31 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
    Processes a contact with the ball and another body.
    *
    * @param body physics body in contact with the ball
-   * @oaram localR the contact point in body's local coordinates. undefined if
+   * @param localR the contact point in body's local coordinates. undefined if
    * the body is not one of the paddles
+   * @param ballWorldR contact point in world space
    */
-  this.processContact = function(body, localR) {
+  this.processBallContact = function(body, localR, ballWorldR) {
     assert(APP.Model.difficulty.ballspeed, 'Must be defined');
 
-    var ballv = this.ball.physicsBody.velocity;
-    var ballp = this.ball.physicsBody.position;
+    var ballBody = this.ball.physicsBody;
+    var ballv = ballBody.velocity;
+    var ballp = ballBody.position;
     var pw2 = (this.myPaddle.Width / 2);
     var ph2 = (this.myPaddle.Height / 2);
 
     if (body.id === this.myPaddle.physicsBody.id) {
+      // Add a surface impulse from the striking paddle's velocity
+      // to induce spin in the ball
+      var v = this.myPaddle.physicsBody.velocity;
+      var impulse = v.scale(0.1);
+      this.ball.physicsBody.applyImpulse(impulse, ballWorldR);
+
       // Adjust ball bounce angle slightly by the contact point
       ballv.x += ((localR.x / pw2) * BallBounceAngleModifier);
       ballv.y += ((localR.y / ph2) * BallBounceAngleModifier);
 
-      var v = this.myPaddle.velocity;
-      var speed = Math.sqrt((v.x * v.x) + (v.y * v.y));
-
+      var speed = v.length();
       if (speed >= SpeedBoostMin) {
         this.ball.speedMultiplier += (speed - SpeedBoostMin) * SpeedBoostModifier;
       }
@@ -79,6 +85,11 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
       }
     }
 
+    if (body.id !== this.myPaddle.physicsBody.id) {
+      // Hit something else than my paddle; dampen the angular velocity (spin)
+      ballBody.angularVelocity.scale(0.80, ballBody.angularVelocity);
+    }
+
     // If hit anything else then opponent's paddle while in sinpleplayer mode,
     // update the computer player's prediction of where the ball will hit
     if (APP.Model.gameMode === APP.GameMode.SinglePlayer) {
@@ -95,7 +106,7 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
     // Make sure the ball is moving at correct speed after the contact
     this.ball.speedMultiplier =
       Math.min(MaxSpeedMultiplier, this.ball.speedMultiplier);
-    console.log('speedMultiplier', this.ball.speedMultiplier);
+   // console.log('speedMultiplier', this.ball.speedMultiplier);
     var ballSpeed = APP.Model.difficulty.ballspeed * this.ball.speedMultiplier;
     ballv.unit(ballv).scale(ballSpeed, ballv);
   };
@@ -109,12 +120,14 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
 
     // Extract the 'other' object (another being always the ball) and its r
     var c = this.world.contacts[0];
-    var r, body;
+    var r, body, ballR;
 
     if (c.bi.id === this.ball.physicsBody.id) {
+      ballR = c.ri;
       body = c.bj;
       r = c.rj;
     } else if (c.bj.id === this.ball.physicsBody.id) {
+      ballR = c.rj;
       body = c.bi;
       r = c.ri;
     } else {
@@ -127,9 +140,11 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
       // Calculate contact point in body's local coordinate space
       var worldR = body.position.vadd(r);
       var localR = body.pointToLocalFrame(worldR);
-      this.processContact(body, localR);
+      var ballWorldR = this.ball.physicsBody.position.vadd(ballR);
+
+      this.processBallContact(body, localR, ballWorldR);
     } else {
-      this.processContact(body);
+      this.processBallContact(body);
     }
   };
 

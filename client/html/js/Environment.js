@@ -18,8 +18,8 @@ APP.Environment = function() {
     this.physicsBody = new CANNON.Body({
       mass: 0, // mass == 0 makes the body static
       material: new CANNON.Material({
-        friction: 0.0,
-        restitution: 1.0
+        friction: 1,
+        restitution: 0.9
       }),
     });
 
