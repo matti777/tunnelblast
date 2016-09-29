@@ -35,6 +35,8 @@ APP.Ui = function() {
       scores.hide();
     }
 
+    $('#multi-player').toggleClass('disabled', !APP.Model.connectedToServer);
+
     $('#nickname-input').val(APP.Model.myName);
   };
 

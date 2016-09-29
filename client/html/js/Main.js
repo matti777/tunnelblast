@@ -13,8 +13,12 @@ APP.Difficulty = {
   Hard: {
     ballspeed: 2.5,
     opponentPaddleSpeed: 0.3
+  },
+  Multiplayer: {
+    ballspeed: 2
   }
 };
+var InitialBallSpeed = 1.2; // Speed of the ball at start of each round
 
 APP.Model = {score: {me: 0, opponent: 0}};
 
@@ -88,13 +92,30 @@ function init() {
   input = new APP.Input(renderer, camera, myPaddle);
 
   // Start Networking
-  networking = new APP.Networking();
+  networking = new APP.Networking(networkCalllback);
 
   // Add event listeners
   window.addEventListener('resize', onWindowResize, false);
 
   // Update the html UI
   ui.update();
+}
+
+function networkCalllback(message, data) {
+  console.log('Network callback', message, data);
+
+  switch (message) {
+    case networking.messages.connected:
+      console.log('connected');
+      APP.Model.connectedToServer = true;
+      ui.update()
+      break;
+    case networking.messages.disconnected:
+      console.log('disconnected');
+      APP.Model.connectedToServer = false;
+      ui.update();
+      break;
+  }
 }
 
 function showMenu() {
@@ -122,23 +143,42 @@ function activateBall(activate) {
 }
 
 function startGame(mode, difficulty) {
-  assert(mode === APP.GameMode.SinglePlayer, 'Multiplayer not supported yet');
-  assert((difficulty === APP.Difficulty.Easy) ||
-    (difficulty === APP.Difficulty.Hard), 'Invalid difficulty value');
+  assert((mode === APP.GameMode.SinglePlayer) ||
+    (mode === APP.GameMode.SinglePlayer), 'Invalid mode value');
 
-  APP.Model.difficulty = difficulty;
   APP.Model.gameMode = mode;
-  APP.Model.opponentName = 'AI'; //TODO only for singleplayer
-  console.log('Selected difficulty:', APP.Model.difficulty);
-
-  activateBall(true);
-  ball.physicsBody.velocity =
-    new CANNON.Vec3(0, 0, APP.Model.difficulty.ballspeed);
   myPaddle.moveTo(myPaddleStartLocation, environment);
   opponentPaddle.moveTo(opponentPaddleStartLocation, environment);
   delete opponentPaddle.movementTarget;
 
-  APP.Model.gameRunning = true;
+  if (mode === APP.GameMode.SinglePlayer) {
+    // Single player game starts immediately
+    assert((difficulty === APP.Difficulty.Easy) ||
+      (difficulty === APP.Difficulty.Hard), 'Invalid difficulty value');
+
+    APP.Model.difficulty = difficulty;
+    APP.Model.opponentName = 'AI';
+    console.log('Selected difficulty:', APP.Model.difficulty);
+
+    activateBall(true);
+    ball.physicsBody.velocity.set(0, 0, InitialBallSpeed);
+    APP.Model.gameRunning = true;
+  } else {
+    assert(APP.Model.multiplayer, 'Multiplayer game data missing');
+    assert(APP.Model.multiplayer.opponent, 'Invalid multiplayer game data');
+
+    APP.Model.difficulty = APP.Difficulty.Multiplayer;
+    APP.Model.opponentName = APP.Model.multiplayer.opponent.nickname;
+    activateBall(true);
+
+    // Multiplayer game starts immediately for the host; after the first
+    // received server update for the other player
+    if (APP.Model.multiplayer.host) {
+      ball.physicsBody.velocity.set(0, 0, InitialBallSpeed);
+      APP.Model.gameRunning = true;
+    }
+  }
+
   ui.update();
 }
 
@@ -149,54 +189,54 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-function checkForScoring() {
-  var updateScore = function(iScored) {
-    if (iScored) {
-      APP.Model.score.me++;
-      ui.displayFadingLargeText('You scored!', 200);
-    } else {
-      APP.Model.score.opponent++;
-      ui.displayFadingLargeText(APP.Model.opponentName + ' scored!', 200);
-    }
-    ui.update();
+function updateScore(iScored) {
+  if (iScored) {
+    APP.Model.score.me++;
+    ui.displayFadingLargeText('You scored!', 200);
+  } else {
+    APP.Model.score.opponent++;
+    ui.displayFadingLargeText(APP.Model.opponentName + ' scored!', 200);
+  }
+  ui.update();
 
-    // Move ball + paddles to their starting locations
-    ball.reset();
-    activateBall(false);
-    myPaddle.moveTo(myPaddleStartLocation, environment);
-    opponentPaddle.moveTo(opponentPaddleStartLocation, environment);
-    delete opponentPaddle.movementTarget;
+  // Move ball + paddles to their starting locations
+  ball.reset();
+  activateBall(false);
+  myPaddle.moveTo(myPaddleStartLocation, environment);
+  opponentPaddle.moveTo(opponentPaddleStartLocation, environment);
+  delete opponentPaddle.movementTarget;
 
-    // Check if the game was won
-    var winMsg;
-    if (APP.Model.score.me >= EndScore) {
-      winMsg = 'You won!';
-    } else if (APP.Model.score.opponent >= EndScore) {
-      winMsg = APP.Model.opponentName + ' won!';
-    }
-    if (winMsg) {
-      APP.Model.gameRunning = false;
-      setTimeout(function() {
-        ui.displayFadingLargeText(winMsg, 200);
-        setTimeout(function() {
-          console.log('Showing menu again..');
-          showMenu();
-        }, 1700);
-      }, 1500);
-
-      return;
-    }
-
-    // Reset the ball to the middle
-    activateBall(true);
-
+  // Check if the game was won
+  var winMsg;
+  if (APP.Model.score.me >= EndScore) {
+    winMsg = 'You won!';
+  } else if (APP.Model.score.opponent >= EndScore) {
+    winMsg = APP.Model.opponentName + ' won!';
+  }
+  if (winMsg) {
+    APP.Model.gameRunning = false;
     setTimeout(function() {
-      // Launch the ball again!
-      ball.physicsBody.velocity =
-        new CANNON.Vec3(0, 0, APP.Model.difficulty.ballspeed);
-    }, 1200);
-  };
+      ui.displayFadingLargeText(winMsg, 200);
+      setTimeout(function() {
+        console.log('Showing menu again..');
+        showMenu();
+      }, 1700);
+    }, 1500);
 
+    return;
+  }
+
+  // Reset the ball to the middle
+  activateBall(true);
+
+  setTimeout(function() {
+    // Launch the ball again!
+    ball.physicsBody.velocity =
+      new CANNON.Vec3(0, 0, APP.Model.difficulty.ballspeed);
+  }, 1200);
+}
+
+function checkForScoring() {
   // Check if ball has passed behind my paddle ie. opponent scores
   if (ball.position.z > (myPaddle.position.z + ball.Radius)) {
     updateScore(false);
@@ -218,8 +258,11 @@ function animate(time) {
     // Physics tick
     physics.update(time);
 
-    // Check if either player scored this frame
-    checkForScoring();
+    if ((APP.Model.gameMode === APP.GameMode.SinglePlayer) ||
+      (APP.Model.multiplayer.host)) {
+      // Check if either player scored this frame
+      checkForScoring();
+    }
   }
 
   // Request next frame to be drawn after this one completes

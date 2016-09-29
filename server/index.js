@@ -5,9 +5,11 @@ var moment = require('moment');
 io.on('connection', function(socket){
   console.log('a user connected', socket.id);
 
-  socket.on('client-ping', function(msg) {
+  socket.on('client-ping', function(msg, callback) {
     console.log('Received client-ping', socket.id, msg);
-    socket.emit('server-pong', {serverTime: moment().utc().valueOf()});
+
+    callback({serverTime: moment().utc().valueOf()});
+    //socket.emit('server-pong', {serverTime: moment().utc().valueOf()});
   });
 
   socket.on('disconnect', function() {
