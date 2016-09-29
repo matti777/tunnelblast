@@ -2,7 +2,7 @@
 var APP = APP || {};
 
 APP.GameMode = {
-  SinglePlayer: 1, Duel: 2
+  SinglePlayer: 1, MultiPlayer: 2
 };
 
 APP.Difficulty = {
@@ -36,8 +36,11 @@ var myPaddleStartLocation, opponentPaddleStartLocation;
 function init() {
   scene = new THREE.Scene();
 
+  // Start Networking
+  networking = new APP.Networking(networkCalllback);
+
   // Create UI handler
-  ui = new APP.Ui();
+  ui = new APP.Ui(networking);
 
   // Create the surrounding environment (tunnel)
   environment = new APP.Environment();
@@ -90,9 +93,6 @@ function init() {
 
   // Attach input handler(s)
   input = new APP.Input(renderer, camera, myPaddle);
-
-  // Start Networking
-  networking = new APP.Networking(networkCalllback);
 
   // Add event listeners
   window.addEventListener('resize', onWindowResize, false);

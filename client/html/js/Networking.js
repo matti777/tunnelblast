@@ -27,6 +27,21 @@ APP.Networking = function(callback) {
       });
   };
 
+  this.findGame = function() {
+    this.socket.emit('find-game', {nickname: APP.Model.myName}, function(data) {
+      console.log('find-game response callback: ', data);
+    });
+  };
+
+  this.socket.on('game-starting', function(msg) {
+    console.log('Game starting!', msg);
+  });
+
+  this.socket.on('player-disconnected', function(msg) {
+    console.log('Opponent disconnected', msg);
+    callback(self.messages.opponentDisconnected);
+  });
+
   this.socket.on('connect', function() {
     console.log('Connected to server');
     callback(self.messages.connected);
@@ -40,11 +55,6 @@ APP.Networking = function(callback) {
   this.socket.on('reconnect_error', function(err) {
     console.log('Reconnection error', err);
     callback(self.messages.disconnected);
-  });
-
-  this.socket.on('user-disconnected', function(msg) {
-    console.log('User disconnected', msg);
-    callback(self.messages.opponentDisconnected);
   });
 
   // Send initial ping immediately

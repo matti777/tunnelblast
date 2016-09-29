@@ -1,7 +1,9 @@
 // Define namespace
 var APP = APP || {};
 
-APP.Ui = function() {
+APP.Ui = function(networking) {
+  var self = this;
+
   this.displayFadingLargeText = function(text, fadeOutDelay, useLarger) {
     // Delete existing large-text node(s)
     var largeTextContainer = $('#large-text-container');
@@ -52,7 +54,11 @@ APP.Ui = function() {
   }
 
   this.showMenu = function(show) {
-    var self = this;
+    var findMultiplayerGame = function() {
+      networking.findGame();
+
+      //TODO show LOOKING FOR GAME ...
+    };
 
     var doStartGame = function(mode, difficulty) {
       self.showMenu(false);
@@ -73,6 +79,9 @@ APP.Ui = function() {
       });
       $('#single-player-hard').bind('click', function() {
         doStartGame(APP.GameMode.SinglePlayer, APP.Difficulty.Hard);
+      });
+      $('#multi-player').bind('click', function() {
+        findMultiplayerGame();
       });
       $('#nickname-input-button').bind('click', function() {
         var nickname = $('#nickname-input').val().trim();
