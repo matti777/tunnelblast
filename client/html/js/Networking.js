@@ -33,6 +33,12 @@ APP.Networking = function(callback) {
     });
   };
 
+  this.quitGame = function() {
+    this.socket.emit('quit-game', {}, function(data) {
+      console.log('quit-game response callback: ', data);
+    });
+  };
+
   this.socket.on('game-starting', function(msg) {
     console.log('Game starting!', msg);
   });

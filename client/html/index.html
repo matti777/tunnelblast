@@ -44,19 +44,24 @@
 <!-- This is where we're rendering our 3D scene -->
 <div id="renderer"></div>
 
+<!-- This is all of our UI -->
 <div id="full-screen">
   <div id="score-container"></div>
   <div id="large-text-container"></div>
 
   <div id="menu-container">
-    <div id="nickname-input-container">
+    <div id="main-menu">
       Enter your nickname:<br>
       <input id="nickname-input" type="text" value="">
       <div id="nickname-input-button" class="button">SAVE</div>
+      <div id="single-player-easy" class="button menu-button">Single player (easy)</div>
+      <div id="single-player-hard" class="button menu-button">Single player (hard)</div>
+      <div id="multi-player" class="button menu-button">Multiplayer</div>
     </div>
-    <div id="single-player-easy" class="button menu-button">Single player (easy)</div>
-    <div id="single-player-hard" class="button menu-button">Single player (hard)</div>
-    <div id="multi-player" class="button menu-button">Multiplayer</div>
+    <div id="looking-for-game-menu">
+      Waiting for an opponent..
+      <div id="cancel-game" class="button menu-button">Cancel</div>
+    </div>
   </div>
 </div>
 

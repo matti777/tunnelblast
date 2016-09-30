@@ -89,6 +89,9 @@ canvas {
     left: 50%;
     transform: translate(-50%, -50%);
     opacity: 0.7;
+    color: white;
+    font-size: 2vw;
+    font-weight: bold;
 }
 
 #menu-container.animate {
@@ -100,12 +103,6 @@ canvas {
     animation-name: anim-opacity-reverse;
     animation-duration: 0.8s;
     opacity: 0;
-}
-
-#nickname-input-container {
-    color: white;
-    font-size: 2vw;
-    font-weight: bold;
 }
 
 #nickname-input {
@@ -131,10 +128,15 @@ canvas {
     color: rgba(0, 0, 0, .7)
 }
 
+#looking-for-game-menu {
+    display: none; /* This menu is initially hidden */
+}
+
 div.button {
     border: 2px solid rgba(255, 255, 255, .4);
     font-weight: bold;
     color: white;
+    text-align: center;
 }
 
 div.button.disabled {

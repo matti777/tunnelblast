@@ -4,6 +4,11 @@ var APP = APP || {};
 APP.Ui = function(networking) {
   var self = this;
 
+  this.mainMenu = $('#main-menu');
+  this.findingGameMenu = $('#looking-for-game-menu');
+  this.findingGameMenu.hide();
+  // this.mainMenuVisible = true;
+
   this.displayFadingLargeText = function(text, fadeOutDelay, useLarger) {
     // Delete existing large-text node(s)
     var largeTextContainer = $('#large-text-container');
@@ -37,6 +42,11 @@ APP.Ui = function(networking) {
       scores.hide();
     }
 
+    if (!APP.Model.connectedToServer && (this.mainMenu.css('display') === 'none')) {
+      // Server disconnected while in Looking for game menu; restore main menu.
+      this.showFindingGameMenu(false);
+    }
+
     $('#multi-player').toggleClass('disabled', !APP.Model.connectedToServer);
 
     $('#nickname-input').val(APP.Model.myName);
@@ -53,13 +63,23 @@ APP.Ui = function(networking) {
     }
   }
 
+  this.showFindingGameMenu = function(show) {
+    if (show) {
+      self.mainMenu.hide(400);
+      self.findingGameMenu.show(400);
+
+      $('#cancel-game').bind('click', function () {
+        networking.quitGame();
+        self.showFindingGameMenu(false);
+      });
+    } else {
+      self.mainMenu.show(400);
+      self.findingGameMenu.hide(400);
+      $('#cancel-game').unbind();
+    }
+  };
+
   this.showMenu = function(show) {
-    var findMultiplayerGame = function() {
-      networking.findGame();
-
-      //TODO show LOOKING FOR GAME ...
-    };
-
     var doStartGame = function(mode, difficulty) {
       self.showMenu(false);
 
@@ -81,7 +101,8 @@ APP.Ui = function(networking) {
         doStartGame(APP.GameMode.SinglePlayer, APP.Difficulty.Hard);
       });
       $('#multi-player').bind('click', function() {
-        findMultiplayerGame();
+        networking.findGame();
+        self.showFindingGameMenu(true);
       });
       $('#nickname-input-button').bind('click', function() {
         var nickname = $('#nickname-input').val().trim();

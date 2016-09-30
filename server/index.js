@@ -12,8 +12,32 @@ var currentGames = {};
 io.on('connection', function(socket){
   console.log('New connection from socket ID: ', socket.id);
 
+  function handleDisconnect(socket) {
+    if (waitingForGame[socket.id]) {
+      console.log('Disconnecting waiting for game entry',
+        waitingForGame[socket.id]);
+      delete waitingForGame[socket.id];
+    }
+
+    var game = currentGames[socket.id];
+    if (game) {
+      console.log('Disconnecting game', game);
+      delete currentGames[game.host.socketId];
+      delete currentGames[game.otherPlayer.socketId];
+
+      var notifySocketId = (socket.id === game.host.socketId) ?
+        game.otherPlayer.socketId : game.host.socketId;
+      var notifySocket = io.sockets.connected[notifySocketId];
+      if (notifySocket) {
+        notifySocket.emit('player-disconnected');
+      } else {
+        console.log('Disconnect: could not find notifySocket!');
+      }
+    }
+  };
+
   socket.on('client-ping', function(msg, callback) {
-    console.log('Received client-ping', socket.id, msg);
+    // console.log('Received client-ping', socket.id, msg);
 
     callback({serverTime: moment().utc().valueOf()});
   });
@@ -53,24 +77,14 @@ io.on('connection', function(socket){
     }
   });
 
+  socket.on('quit-game', function(msg, callback) {
+    console.log('quit-game for socket id', socket.id);
+    handleDisconnect(socket);
+    callback({status: 'ok'});
+  });
+
   socket.on('disconnect', function() {
     console.log('user disconnected', socket.id);
-
-    delete waitingForGame[socket.id];
-
-    var game = currentGames[socket.id];
-    if (game) {
-      delete currentGames[game.host.socketId];
-      delete currentGames[game.otherPlayer.socketId];
-
-      var notifySocketId = (socket.id === game.host.socketId) ?
-        game.otherPlayer.socketId : game.host.socketId;
-      var notifySocket = io.sockets.connected[notifySocketId];
-      if (notifySocket) {
-        notifySocket.emit('player-disconnected');
-      } else {
-        console.log('Disconnect: could not find notifySocket!');
-      }
-    }
+    handleDisconnect(socket);
   });
 });
