@@ -15,6 +15,8 @@ APP.Paddle = function(type, environment) {
   this.moveTo = function(newPosition) {
     assert(newPosition, 'Mandatory param missing');
 
+    console.log('moving to', newPosition);
+
     // Bound paddle movement by the walls
     var pw2 = (this.Width / 2);
     var ew2 = (this.environment.Width / 2);

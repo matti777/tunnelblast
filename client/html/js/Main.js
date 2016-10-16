@@ -15,10 +15,10 @@ APP.Difficulty = {
     opponentPaddleSpeed: 0.3
   },
   Multiplayer: {
-    ballspeed: 2
+    ballspeed: 0.1 //2
   }
 };
-var InitialBallSpeed = 1.2; // Speed of the ball at start of each round
+var InitialBallSpeed = 0.1; //1.2; // Speed of the ball at start of each round
 
 APP.Model = {score: {me: 0, opponent: 0}};
 
@@ -101,19 +101,69 @@ function init() {
   ui.update();
 }
 
+function multiplayerGameEnded() {
+  delete APP.Model.multiplayer;
+  showMenu();
+}
+
+function serverConnectionDisconnected(msg) {
+  console.log('disconnected');
+  APP.Model.connectedToServer = false;
+
+  if (APP.Model.gameMode === APP.GameMode.MultiPlayer) {
+    multiplayerGameEnded()
+  } else {
+    ui.update();
+  }
+}
+
+function multiplayerGameStarting(gameData) {
+  console.log('multiplayer game starting; gameData', gameData);
+
+  APP.Model.multiplayer = gameData;
+
+  ui.doStartGameAnimations(function() {
+    startGame(APP.GameMode.MultiPlayer);
+  });
+}
+
+function serverUpdateReceived(data) {
+  var mirror = function(vector) {
+    return {x: -vector.x, y: vector.y, z: -vector.z};
+  };
+
+  // Update the opponent's paddle position if present
+  if (data.paddlePosition) {
+    opponentPaddle.moveTo(mirror(data.paddlePosition));
+  }
+
+  if (data.paddleVelocity) {
+    opponentPaddle.physicsBody.velocity.copy(mirror(data.paddleVelocity));
+  }
+
+  //TODO other properties from msg
+}
+
 function networkCalllback(message, data) {
-  console.log('Network callback', message, data);
+  // console.log('Network callback', message, data);
 
   switch (message) {
+    case networking.messages.serverUpdate:
+      serverUpdateReceived(data);
+      break;
     case networking.messages.connected:
-      console.log('connected');
       APP.Model.connectedToServer = true;
       ui.update()
       break;
     case networking.messages.disconnected:
-      console.log('disconnected');
-      APP.Model.connectedToServer = false;
-      ui.update();
+      serverConnectionDisconnected(data);
+      break;
+    case networking.messages.quitGame:
+    case networking.messages.opponentDisconnected:
+      multiplayerGameEnded();
+      break;
+    case networking.messages.gameStarting:
+      multiplayerGameStarting(data);
       break;
   }
 }
@@ -124,6 +174,7 @@ function showMenu() {
   activateBall(false);
   ball.reset();
   ui.update();
+  ui.showFindingGameMenu(false);
   ui.showMenu(true);
 }
 
@@ -144,7 +195,7 @@ function activateBall(activate) {
 
 function startGame(mode, difficulty) {
   assert((mode === APP.GameMode.SinglePlayer) ||
-    (mode === APP.GameMode.SinglePlayer), 'Invalid mode value');
+    (mode === APP.GameMode.MultiPlayer), 'Invalid mode value');
 
   APP.Model.gameMode = mode;
   myPaddle.moveTo(myPaddleStartLocation, environment);
@@ -170,12 +221,12 @@ function startGame(mode, difficulty) {
     APP.Model.difficulty = APP.Difficulty.Multiplayer;
     APP.Model.opponentName = APP.Model.multiplayer.opponent.nickname;
     activateBall(true);
+    APP.Model.gameRunning = true;
 
     // Multiplayer game starts immediately for the host; after the first
     // received server update for the other player
-    if (APP.Model.multiplayer.host) {
+    if (APP.Model.multiplayer.youAreHost) {
       ball.physicsBody.velocity.set(0, 0, InitialBallSpeed);
-      APP.Model.gameRunning = true;
     }
   }
 
@@ -205,6 +256,10 @@ function updateScore(iScored) {
   myPaddle.moveTo(myPaddleStartLocation, environment);
   opponentPaddle.moveTo(opponentPaddleStartLocation, environment);
   delete opponentPaddle.movementTarget;
+
+  // TODO update scored -status to networking
+
+  //TODO update won -status to networking also
 
   // Check if the game was won
   var winMsg;
@@ -259,10 +314,14 @@ function animate(time) {
     physics.update(time);
 
     if ((APP.Model.gameMode === APP.GameMode.SinglePlayer) ||
-      (APP.Model.multiplayer.host)) {
+      (APP.Model.multiplayer.youAreHost)) {
       // Check if either player scored this frame
       checkForScoring();
     }
+
+    // Update the paddle state to the server
+    networking.updatePaddleState(myPaddle.position,
+      myPaddle.physicsBody.velocity);
   }
 
   // Request next frame to be drawn after this one completes
@@ -278,7 +337,7 @@ function render() {
 APP.main = function() {
   APP.Model.myName = localStorage.getItem('myNickname');
   if (!APP.Model.myName || (APP.Model.myName.length < 1)) {
-    // Generate a nickname
+    // Generate an initial nickname
     APP.Model.myName = randomString(8);
     localStorage.setItem('myNickname', APP.Model.myName);
   }

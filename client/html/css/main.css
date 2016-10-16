@@ -45,7 +45,7 @@ canvas {
 
 #score-container {
     pointer-events: none;
-    font-size: 10vh;
+    font-size: 4vw;
     font-weight: bold;
     color: white;
     opacity: 0.5;
@@ -78,7 +78,7 @@ canvas {
 #large-text.animate {
     transition: all 1s;
     transition-timing-function: ease-in;
-    transform: scale(0.1);
+    transform: scale(0.6);
     opacity: 0;
 }
 

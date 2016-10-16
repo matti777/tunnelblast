@@ -7,7 +7,6 @@ APP.Ui = function(networking) {
   this.mainMenu = $('#main-menu');
   this.findingGameMenu = $('#looking-for-game-menu');
   this.findingGameMenu.hide();
-  // this.mainMenuVisible = true;
 
   this.displayFadingLargeText = function(text, fadeOutDelay, useLarger) {
     // Delete existing large-text node(s)
@@ -79,15 +78,21 @@ APP.Ui = function(networking) {
     }
   };
 
-  this.showMenu = function(show) {
-    var doStartGame = function(mode, difficulty) {
-      self.showMenu(false);
+  this.doStartGameAnimations = function(callback) {
+    self.showMenu(false);
 
-      setTimeout(function() {
-        showCountdownTimer(1, function () {
-          startGame(mode, difficulty);
-        });
-      }, 1000);
+    setTimeout(function() {
+      showCountdownTimer(1, function () {
+        callback();
+      });
+    }, 1000);
+  };
+
+  this.showMenu = function(show) {
+    var doStartSinglePlayerGame = function(difficulty) {
+      self.doStartGameAnimations(function() {
+        startGame(APP.GameMode.SinglePlayer, difficulty);
+      });
     };
 
     var fs = $('#full-screen');
@@ -95,10 +100,10 @@ APP.Ui = function(networking) {
 
     if (show) {
       $('#single-player-easy').bind('click', function() {
-        doStartGame(APP.GameMode.SinglePlayer, APP.Difficulty.Easy);
+        doStartSinglePlayerGame(APP.Difficulty.Easy);
       });
       $('#single-player-hard').bind('click', function() {
-        doStartGame(APP.GameMode.SinglePlayer, APP.Difficulty.Hard);
+        doStartSinglePlayerGame(APP.Difficulty.Hard);
       });
       $('#multi-player').bind('click', function() {
         networking.findGame();
