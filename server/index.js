@@ -51,7 +51,7 @@ io.on('connection', function(socket){
     var hostUpdate = game.host.stateUpdate;
     if (hostUpdate && !game.host.updatePending) {
       var otherSocket = io.sockets.connected[game.otherPlayer.socketId];
-      game.host.updatePending = true;
+      game.otherPlayer.updatePending = true;
 
       otherSocket.emit('server-update', hostUpdate, function() {
         console.log('server-update: other player client ACK.');
@@ -64,7 +64,7 @@ io.on('connection', function(socket){
     var otherUpdate = game.otherPlayer.stateUpdate;
     if (otherUpdate && !game.otherPlayer.updatePending) {
       var hostSocket = io.sockets.connected[game.host.socketId];
-      game.otherPlayer.updatePending = true;
+      game.host.updatePending  = true;
 
       hostSocket.emit('server-update', otherUpdate, function() {
         console.log('server-update: host player client ACK.');

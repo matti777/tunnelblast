@@ -138,8 +138,11 @@ function serverUpdateReceived(data) {
   }
 
   if (data.paddleVelocity) {
+    console.log('Got opponent paddle velocity: ', data.paddleVelocity);
     opponentPaddle.physicsBody.velocity.copy(mirror(data.paddleVelocity));
   }
+
+  opponentPaddle.lastUpdateTime = moment().utc().valueOf();
 
   //TODO other properties from msg
 }
@@ -322,6 +325,11 @@ function animate(time) {
     // Update the paddle state to the server
     networking.updatePaddleState(myPaddle.position,
       myPaddle.physicsBody.velocity);
+
+    if (APP.Model.gameMode === APP.GameMode.MultiPlayer) {
+      // Update the opponent paddle position according to its velocity
+      opponentPaddle.moveWithVelocity();
+    }
   }
 
   // Request next frame to be drawn after this one completes

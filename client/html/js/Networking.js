@@ -2,7 +2,7 @@
 var APP = APP || {};
 
 var PingInterval = 5000; // Interval for sending client-ping, in ms
-var UpdateInterval = 200; // Interval for sending client-update, in ms
+var UpdateInterval = 500; // Interval for sending client-update, in ms
 
 APP.Networking = function(callback) {
   this.socket = io('http://localhost:3000');
@@ -32,14 +32,23 @@ APP.Networking = function(callback) {
   };
 
   this.updatePaddleState = function(position, velocity) {
+    // Check if we can avoid sending an unnecessary state update;
+    // this is the case in case the paddle speed was zero last time and
+    // the position has not changed.
+    if (this.prevPaddlePosition && this.prevPaddleVelocity) {
+      if ((this.prevPaddleVelocity.length() < 0.00001) &&
+        (this.prevPaddlePosition.distanceTo(position) < 0.00001)) {
+        console.log('Skipping update..');
+        return;
+      }
+    }
+
     this.paddlePosition = position;
     this.paddleVelocity = velocity;
   };
 
   // Sends any updates to the server unless an update request is pending
   this.sendUpdate = function() {
-    // console.log('sendUpdate()');
-
     if (this.updatePending) {
       console.log('Update congested!');
       return;
@@ -49,11 +58,13 @@ APP.Networking = function(callback) {
 
     if (this.paddlePosition && (this.paddlePosition !== null)) {
       msg.paddlePosition = this.paddlePosition;
+      this.prevPaddlePosition = this.paddlePosition;
       delete this.paddlePosition;
     }
 
     if (this.paddleVelocity && (this.paddleVelocity !== null)) {
       msg.paddleVelocity = this.paddleVelocity;
+      this.prevPaddleVelocity = this.paddleVelocity;
       delete this.paddleVelocity;
     }
 

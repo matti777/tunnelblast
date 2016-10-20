@@ -15,8 +15,6 @@ APP.Paddle = function(type, environment) {
   this.moveTo = function(newPosition) {
     assert(newPosition, 'Mandatory param missing');
 
-    console.log('moving to', newPosition);
-
     // Bound paddle movement by the walls
     var pw2 = (this.Width / 2);
     var ew2 = (this.environment.Width / 2);
@@ -78,6 +76,27 @@ APP.Paddle = function(type, environment) {
     this.lastTickTime = now;
   };
 
+  // Moves the opponent paddle (multiplayer mode) according to its current
+  // velocity and elapsed time since last update.
+  this.moveWithVelocity = function() {
+    if (!this.lastUpdateTime || this.physicsBody.velocity.almostZero()) {
+      return;
+    }
+
+    var now = moment().utc().valueOf();
+    var diff = now - this.lastUpdateTime;
+    assert(diff >= 0);
+
+    console.log('diff, velocity: ', diff, this.physicsBody.velocity.length());
+    var v = this.physicsBody.velocity.clone();
+    v.scale(diff / 1000);
+
+    var newPos = this.physicsBody.position.vadd(v);
+
+    this.moveTo(newPos);
+    this.lastUpdateTime = now;
+  };
+
   // Adds a position sample and recalculates current speed.
   this.updateSpeed = function() {
     var positionSample = {
@@ -86,15 +105,20 @@ APP.Paddle = function(type, environment) {
       y: this.position.y
     };
 
+    var MaxSamples = 100;
+    var SamplesToUse = 30;
+
     this.positionSamples.push(positionSample);
-    while (this.positionSamples.length > 20) {
+    while (this.positionSamples.length > MaxSamples) {
       this.positionSamples.shift();
     }
+
+    //TODO change this completely. find the sample about 500ms in the past and simply calculate v from the difference with current place + time
 
     // Calculate the 'velocity vector' by calculating the paddle's movement
     // velocity (difference in coordinates / time spent)
     var v = {x: 0, y: 0};
-    var n = Math.min(this.positionSamples.length - 1, 6);
+    var n = Math.min(this.positionSamples.length - 1, SamplesToUse);
     if (n < 2) {
       this.speed = 0;
       return;
@@ -114,7 +138,7 @@ APP.Paddle = function(type, environment) {
     v.x /= n;
     v.y /= n;
 
-    // Also set the velocity to the physics body to affect collisions
+    // Also set the velocity to the physics body
     this.physicsBody.velocity.set(v.x, v.y, 0);
   };
 
