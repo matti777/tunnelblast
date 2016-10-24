@@ -36,15 +36,21 @@ APP.Networking = function(callback) {
     // this is the case in case the paddle speed was zero last time and
     // the position has not changed.
     if (this.prevPaddlePosition && this.prevPaddleVelocity) {
-      if ((this.prevPaddleVelocity.length() < 0.00001) &&
-        (this.prevPaddlePosition.distanceTo(position) < 0.00001)) {
-        console.log('Skipping update..');
+      if ((this.prevPaddleVelocity.almostZero()) &&
+        (this.prevPaddlePosition.almostEquals(position))) {
+        // console.log('Skipping update..');
         return;
       }
     }
 
     this.paddlePosition = position;
     this.paddleVelocity = velocity;
+  };
+
+  this.updateBallState = function(position, velocity, angularVelocity) {
+    this.ballPosition = position;
+    this.ballVelocity = velocity;
+    this.ballAngularVelocity = angularVelocity;
   };
 
   // Sends any updates to the server unless an update request is pending
@@ -56,19 +62,26 @@ APP.Networking = function(callback) {
 
     var msg = {};
 
-    if (this.paddlePosition && (this.paddlePosition !== null)) {
+    if (this.paddlePosition && this.paddleVelocity) {
       msg.paddlePosition = this.paddlePosition;
-      this.prevPaddlePosition = this.paddlePosition;
-      delete this.paddlePosition;
-    }
-
-    if (this.paddleVelocity && (this.paddleVelocity !== null)) {
       msg.paddleVelocity = this.paddleVelocity;
+
+      this.prevPaddlePosition = this.paddlePosition;
       this.prevPaddleVelocity = this.paddleVelocity;
+
+      delete this.paddlePosition;
       delete this.paddleVelocity;
     }
 
-    //TODO ball position
+    if (this.ballPosition && this.ballVelocity && this.ballAngularVelocity) {
+      msg.ballPosition = this.ballPosition;
+      msg.ballVelocity = this.ballVelocity;
+      msg.ballAngularVelocity = this.ballAngularVelocity;
+
+      delete this.ballPosition;
+      delete this.ballVelocity;
+      delete this.ballAngularVelocity;
+    }
 
     //TODO scoring
 
@@ -83,6 +96,16 @@ APP.Networking = function(callback) {
         console.log('client-update ACKed by server');
       });
     }
+  };
+
+  self.reset = function() {
+    delete this.paddlePosition;
+    delete this.paddleVelocity;
+    delete this.prevPaddlePosition;
+    delete this.prevPaddleVelocity;
+    delete this.ballPosition;
+    delete this.ballVelocity;
+    delete this.ballAngularVelocity;
   };
 
   this.findGame = function() {
@@ -108,6 +131,8 @@ APP.Networking = function(callback) {
   this.socket.on('game-starting', function(msg) {
     console.log('Game starting!', msg);
     callback(self.messages.gameStarting, msg);
+
+    self.reset();
 
     // Start sending updates to server
     this.sendUpdateTimer =

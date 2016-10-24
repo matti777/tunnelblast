@@ -12,7 +12,7 @@ var SpeedBoostMin = 2; // Min speed to give ballspeed boost
 var SpeedBoostModifier = 0.15;
 var MaxSpeedMultiplier = 1.75;
 
-APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
+APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment, networking) {
   /**
    * Checks that the ball's velocity vector differs no more than
    * BallMaxZAngle from the given vector (Z- / Z+ axes), and if it does,
@@ -109,6 +109,16 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
    // console.log('speedMultiplier', this.ball.speedMultiplier);
     var ballSpeed = APP.Model.difficulty.ballspeed * this.ball.speedMultiplier;
     ballv.unit(ballv).scale(ballSpeed, ballv);
+
+    // Send state updates to network if in multiplayer mode
+    if (APP.Model.gameMode === APP.GameMode.MultiPlayer) {
+      if ((body.id === this.myPaddle.physicsBody.id) ||
+        (APP.Model.multiplayer.youAreHost)) {
+        // Host sends all updates. Non-host sends contacts with own paddle only.
+        console.log('physics: sending ball update after contact');
+        networking.updateBallState(ballp, ballv, ball.physicsBody.angularVelocity);
+      }
+    }
   };
 
   // Callback for world post step event (called each time world has updated)
@@ -161,7 +171,6 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment) {
     if (this.opponentPaddle.movementTarget) {
       this.opponentPaddle.moveTowardsTarget();
     };
-    this.myPaddle.updateSpeed();
 
     this.lastTickTime = time;
   };

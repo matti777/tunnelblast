@@ -49,7 +49,7 @@ io.on('connection', function(socket){
   var sendUpdate = function sendUpdate(game) {
     // If the host has an update, send it to the other player unless congested
     var hostUpdate = game.host.stateUpdate;
-    if (hostUpdate && !game.host.updatePending) {
+    if (hostUpdate && !game.otherPlayer.updatePending) {
       var otherSocket = io.sockets.connected[game.otherPlayer.socketId];
       game.otherPlayer.updatePending = true;
 
@@ -64,7 +64,7 @@ io.on('connection', function(socket){
     var otherUpdate = game.otherPlayer.stateUpdate;
     if (otherUpdate && !game.otherPlayer.updatePending) {
       var hostSocket = io.sockets.connected[game.host.socketId];
-      game.host.updatePending  = true;
+      game.host.updatePending = true;
 
       hostSocket.emit('server-update', otherUpdate, function() {
         console.log('server-update: host player client ACK.');
@@ -118,7 +118,7 @@ io.on('connection', function(socket){
       hostSocket.emit('game-starting',
         {youAreHost: true, opponent: game.otherPlayer});
       socket.emit('game-starting', {youAreHost: false, opponent: game.host});
-      console.log('New game starting: ', game);
+      console.log('New game starting');
     } else {
       // Otherwise just add a new looking for a game entry for this player
       var entry = {nickname: msg.nickname};
@@ -144,8 +144,18 @@ io.on('connection', function(socket){
     // Insert / update the pending state update; will be sent to the other
     // player at the next possible moment in the update tick
     var stateUpdate = player.stateUpdate || {};
-    stateUpdate.paddlePosition = msg.paddlePosition;
-    stateUpdate.paddleVelocity = msg.paddleVelocity;
+
+    if (msg.paddlePosition && msg.paddleVelocity) {
+      stateUpdate.paddlePosition = msg.paddlePosition;
+      stateUpdate.paddleVelocity = msg.paddleVelocity;
+    }
+
+    if (msg.ballPosition && msg.ballVelocity && msg.ballAngularVelocity) {
+      stateUpdate.ballPosition = msg.ballPosition;
+      stateUpdate.ballVelocity = msg.ballVelocity;
+      stateUpdate.ballAngularVelocity = msg.ballAngularVelocity;
+    }
+
     player.stateUpdate = stateUpdate;
   });
 

@@ -78,7 +78,7 @@ function init() {
 
   // Initialize physics
   physics = new APP.Physics(PhysicsGravity, ball, myPaddle,
-    opponentPaddle, environment);
+    opponentPaddle, environment, networking);
 
   // Create our renderer..
   renderer = new THREE.WebGLRenderer();
@@ -133,16 +133,20 @@ function serverUpdateReceived(data) {
   };
 
   // Update the opponent's paddle position if present
-  if (data.paddlePosition) {
-    opponentPaddle.moveTo(mirror(data.paddlePosition));
-  }
-
-  if (data.paddleVelocity) {
+  if (data.paddlePosition && data.paddleVelocity) {
     console.log('Got opponent paddle velocity: ', data.paddleVelocity);
+    opponentPaddle.moveTo(mirror(data.paddlePosition));
     opponentPaddle.physicsBody.velocity.copy(mirror(data.paddleVelocity));
+    opponentPaddle.lastUpdateTime = moment().utc().valueOf();
   }
 
-  opponentPaddle.lastUpdateTime = moment().utc().valueOf();
+  if (data.ballPosition && data.ballVelocity && data.ballAngularVelocity) {
+    var mirroredPos = mirror(data.ballPosition);
+    ball.position.copy(mirroredPos);
+    ball.physicsBody.position.copy(mirroredPos);
+    ball.physicsBody.angularVelocity.copy(mirror(data.ballAngularVelocity));
+    ball.physicsBody.velocity.copy(mirror(data.ballVelocity));
+  }
 
   //TODO other properties from msg
 }
@@ -313,6 +317,9 @@ function animate(time) {
   render();
 
   if (APP.Model.gameRunning) {
+    // Update paddle velocity from it's position history
+    myPaddle.updateVelocity();
+
     // Physics tick
     physics.update(time);
 
@@ -323,7 +330,7 @@ function animate(time) {
     }
 
     // Update the paddle state to the server
-    networking.updatePaddleState(myPaddle.position,
+    networking.updatePaddleState(myPaddle.physicsBody.position,
       myPaddle.physicsBody.velocity);
 
     if (APP.Model.gameMode === APP.GameMode.MultiPlayer) {

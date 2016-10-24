@@ -19,7 +19,7 @@ APP.Ball = function() {
     this.physicsBody.position.setZero();
     this.physicsBody.velocity.setZero();
     this.physicsBody.angularVelocity.setZero();
-  }
+  };
 
   // Initialize Cannon physics
   this.initPhysics = function() {
