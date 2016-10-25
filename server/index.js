@@ -145,16 +145,17 @@ io.on('connection', function(socket){
     // player at the next possible moment in the update tick
     var stateUpdate = player.stateUpdate || {};
 
-    if (msg.paddlePosition && msg.paddleVelocity) {
-      stateUpdate.paddlePosition = msg.paddlePosition;
-      stateUpdate.paddleVelocity = msg.paddleVelocity;
+    if (msg.paddle) {
+      stateUpdate.paddle = msg.paddle;
     }
 
-    if (msg.ballPosition && msg.ballVelocity && msg.ballAngularVelocity) {
-      stateUpdate.ballPosition = msg.ballPosition;
-      stateUpdate.ballVelocity = msg.ballVelocity;
-      stateUpdate.ballAngularVelocity = msg.ballAngularVelocity;
+    if (msg.ball) {
+      stateUpdate.ball = msg.ball;
     }
+
+    //TODO scoring updates
+
+    //TODO winning updates
 
     player.stateUpdate = stateUpdate;
   });

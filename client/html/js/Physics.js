@@ -19,7 +19,7 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment, net
    * adjusts the vector.
    */
   this.adjustBallVelocityVector = function(axis) {
-    var ballv = this.ball.physicsBody.velocity;
+    var ballv = ball.physicsBody.velocity;
 
     // Calculate the current angle
     var unitv = ballv.unit();
@@ -32,7 +32,7 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment, net
       var rotationAxis = unitv.cross(axis);
       var quaternion = new CANNON.Quaternion();
       quaternion.setFromAxisAngle(rotationAxis, angleDifference);
-      quaternion.vmult(ballv, this.ball.physicsBody.velocity);
+      quaternion.vmult(ballv, ball.physicsBody.velocity);
     }
   };
 
@@ -47,18 +47,18 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment, net
   this.processBallContact = function(body, localR, ballWorldR) {
     assert(APP.Model.difficulty.ballspeed, 'Must be defined');
 
-    var ballBody = this.ball.physicsBody;
+    var ballBody = ball.physicsBody;
     var ballv = ballBody.velocity;
     var ballp = ballBody.position;
-    var pw2 = (this.myPaddle.Width / 2);
-    var ph2 = (this.myPaddle.Height / 2);
+    var pw2 = (myPaddle.Width / 2);
+    var ph2 = (myPaddle.Height / 2);
 
-    if (body.id === this.myPaddle.physicsBody.id) {
+    if (body.id === myPaddle.physicsBody.id) {
       // Add a surface impulse from the striking paddle's velocity
       // to induce spin in the ball
-      var v = this.myPaddle.physicsBody.velocity;
+      var v = myPaddle.physicsBody.velocity;
       var impulse = v.scale(0.1);
-      this.ball.physicsBody.applyImpulse(impulse, ballWorldR);
+      ball.physicsBody.applyImpulse(impulse, ballWorldR);
 
       // Adjust ball bounce angle slightly by the contact point
       ballv.x += ((localR.x / pw2) * BallBounceAngleModifier);
@@ -66,12 +66,12 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment, net
 
       var speed = v.length();
       if (speed >= SpeedBoostMin) {
-        this.ball.speedMultiplier += (speed - SpeedBoostMin) * SpeedBoostModifier;
+        ball.speedMultiplier += (speed - SpeedBoostMin) * SpeedBoostModifier;
       }
 
       // Make sure the ball's velocity is not at too steep angle
       this.adjustBallVelocityVector(NegativeZAxis);
-    } else if (body.id === this.opponentPaddle.physicsBody.id) {
+    } else if (body.id === opponentPaddle.physicsBody.id) {
       // Only handle opponent paddle collisions in single player mode
       if (APP.Model.gameMode === APP.GameMode.SinglePlayer) {
         // Adjust ball bounce angle slightly by the contact point
@@ -81,11 +81,11 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment, net
         // Make sure the ball's velocity is not at too steep angle
         this.adjustBallVelocityVector(PositiveZAxis);
 
-        this.ball.speedMultiplier = 1;
+        ball.speedMultiplier = 1;
       }
     }
 
-    if (body.id !== this.myPaddle.physicsBody.id) {
+    if (body.id !== myPaddle.physicsBody.id) {
       // Hit something else than my paddle; dampen the angular velocity (spin)
       ballBody.angularVelocity.scale(0.80, ballBody.angularVelocity);
     }
@@ -93,28 +93,29 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment, net
     // If hit anything else then opponent's paddle while in sinpleplayer mode,
     // update the computer player's prediction of where the ball will hit
     if (APP.Model.gameMode === APP.GameMode.SinglePlayer) {
-      if (body.id === this.opponentPaddle.physicsBody.id) {
+      if (body.id === opponentPaddle.physicsBody.id) {
         // Opponent paddle hit in single player mode; start moving to center
-        this.opponentPaddle.setMovementTarget(opponentPaddleStartLocation);
+        opponentPaddle.setMovementTarget(opponentPaddleStartLocation);
       } else {
         var ray = new THREE.Ray(ballp, ballv.unit());
         var intersectPoint = ray.intersectPlane(this.opponentIntersectPlane);
-        this.opponentPaddle.setMovementTarget(intersectPoint);
+        opponentPaddle.setMovementTarget(intersectPoint);
       }
     }
 
     // Make sure the ball is moving at correct speed after the contact
-    this.ball.speedMultiplier =
-      Math.min(MaxSpeedMultiplier, this.ball.speedMultiplier);
-   // console.log('speedMultiplier', this.ball.speedMultiplier);
-    var ballSpeed = APP.Model.difficulty.ballspeed * this.ball.speedMultiplier;
+    ball.speedMultiplier =
+      Math.min(MaxSpeedMultiplier, ball.speedMultiplier);
+   // console.log('speedMultiplier', ball.speedMultiplier);
+    var ballSpeed = APP.Model.difficulty.ballspeed * ball.speedMultiplier;
     ballv.unit(ballv).scale(ballSpeed, ballv);
 
     // Send state updates to network if in multiplayer mode
     if (APP.Model.gameMode === APP.GameMode.MultiPlayer) {
-      if ((body.id === this.myPaddle.physicsBody.id) ||
-        (APP.Model.multiplayer.youAreHost)) {
-        // Host sends all updates. Non-host sends contacts with own paddle only.
+      if ((body.id === myPaddle.physicsBody.id) ||
+        (APP.Model.multiplayer.youAreHost && (body.id !== opponentPaddle.physicsBody.id))) {
+        // Host sends all updates except contact with opponent paddle (both handle
+        // their own paddle contacts). Non-host sends contacts with own paddle only.
         console.log('physics: sending ball update after contact');
         networking.updateBallState(ballp, ballv, ball.physicsBody.angularVelocity);
       }
@@ -132,11 +133,11 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment, net
     var c = this.world.contacts[0];
     var r, body, ballR;
 
-    if (c.bi.id === this.ball.physicsBody.id) {
+    if (c.bi.id === ball.physicsBody.id) {
       ballR = c.ri;
       body = c.bj;
       r = c.rj;
-    } else if (c.bj.id === this.ball.physicsBody.id) {
+    } else if (c.bj.id === ball.physicsBody.id) {
       ballR = c.rj;
       body = c.bi;
       r = c.ri;
@@ -145,12 +146,12 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment, net
       return;
     }
 
-    if ((body.id == this.myPaddle.physicsBody.id) ||
-      (body.id === this.opponentPaddle.physicsBody.id)) {
+    if ((body.id == myPaddle.physicsBody.id) ||
+      (body.id === opponentPaddle.physicsBody.id)) {
       // Calculate contact point in body's local coordinate space
       var worldR = body.position.vadd(r);
       var localR = body.pointToLocalFrame(worldR);
-      var ballWorldR = this.ball.physicsBody.position.vadd(ballR);
+      var ballWorldR = ball.physicsBody.position.vadd(ballR);
 
       this.processBallContact(body, localR, ballWorldR);
     } else {
@@ -168,8 +169,8 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment, net
 
     // Call these from here to ensure it is called after executing the step
     ball.onWorldPostStep();
-    if (this.opponentPaddle.movementTarget) {
-      this.opponentPaddle.moveTowardsTarget();
+    if (opponentPaddle.movementTarget) {
+      opponentPaddle.moveTowardsTarget();
     };
 
     this.lastTickTime = time;
@@ -177,10 +178,6 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment, net
 
   // Initialize physics
   this.init = function(gravity, ball, myPaddle, opponentPaddle, environment) {
-    this.ball = ball;
-    this.myPaddle = myPaddle;
-    this.opponentPaddle = opponentPaddle;
-
     this.world = new CANNON.World();
     this.world.gravity.set(0, gravity, 0);
     this.world.addEventListener('postStep', this.onWorldPostStep.bind(this));

@@ -24,88 +24,78 @@ APP.Networking = function(callback) {
       function (data) {
        // console.log('client-ping response data', data);
         var now = moment().utc().valueOf();
-        var ping = now - then;
-        callback(self.messages.latency, ping);
+        callback(self.messages.latency, (now - then));
 
         setTimeout(self.sendPing.bind(self), PingInterval);
       });
   };
 
+  self.reset = function() {
+    delete self.paddleUpdate;
+    delete self.prevPaddleUpdate;
+    delete self.ballUpdate;
+  };
+
   this.updatePaddleState = function(position, velocity) {
+    assert(position && velocity);
+
     // Check if we can avoid sending an unnecessary state update;
     // this is the case in case the paddle speed was zero last time and
     // the position has not changed.
-    if (this.prevPaddlePosition && this.prevPaddleVelocity) {
-      if ((this.prevPaddleVelocity.almostZero()) &&
-        (this.prevPaddlePosition.almostEquals(position))) {
+    if (self.prevPaddleUpdate) {
+      if ((self.prevPaddleUpdate.velocity.almostZero()) &&
+        (self.prevPaddleUpdate.position.almostEquals(position))) {
         // console.log('Skipping update..');
         return;
       }
     }
 
-    this.paddlePosition = position;
-    this.paddleVelocity = velocity;
+    self.paddleUpdate = {position, velocity};
   };
 
   this.updateBallState = function(position, velocity, angularVelocity) {
-    this.ballPosition = position;
-    this.ballVelocity = velocity;
-    this.ballAngularVelocity = angularVelocity;
+    assert(position && velocity && angularVelocity);
+
+    this.ballUpdate = {position, velocity, angularVelocity};
   };
 
   // Sends any updates to the server unless an update request is pending
   this.sendUpdate = function() {
-    if (this.updatePending) {
+    if (self.updatePending) {
       console.log('Update congested!');
       return;
     }
 
     var msg = {};
 
-    if (this.paddlePosition && this.paddleVelocity) {
-      msg.paddlePosition = this.paddlePosition;
-      msg.paddleVelocity = this.paddleVelocity;
-
-      this.prevPaddlePosition = this.paddlePosition;
-      this.prevPaddleVelocity = this.paddleVelocity;
-
-      delete this.paddlePosition;
-      delete this.paddleVelocity;
+    if (self.paddleUpdate) {
+      msg.paddle = self.paddleUpdate;
+      self.prevPaddleUpdate = self.paddleUpdate;
+      delete self.paddleUpdate;
     }
 
-    if (this.ballPosition && this.ballVelocity && this.ballAngularVelocity) {
-      msg.ballPosition = this.ballPosition;
-      msg.ballVelocity = this.ballVelocity;
-      msg.ballAngularVelocity = this.ballAngularVelocity;
-
-      delete this.ballPosition;
-      delete this.ballVelocity;
-      delete this.ballAngularVelocity;
+    if (self.ballUpdate) {
+      msg.ball = self.ballUpdate;
+      delete self.ballUpdate;
     }
 
     //TODO scoring
 
     //TODO game winning
 
+    //TODO recalculate current latency
     if (Object.keys(msg).length > 0) {
       self.updatePending = true;
       console.log('sending msg: ', msg);
 
+      var then = moment().utc().valueOf();
       this.socket.emit('client-update', msg, function() {
         self.updatePending = false;
         console.log('client-update ACKed by server');
+        var now = moment().utc().valueOf();
+        callback(self.messages.latency, (now - then));
       });
     }
-  };
-
-  self.reset = function() {
-    delete this.paddlePosition;
-    delete this.paddleVelocity;
-    delete this.prevPaddlePosition;
-    delete this.prevPaddleVelocity;
-    delete this.ballPosition;
-    delete this.ballVelocity;
-    delete this.ballAngularVelocity;
   };
 
   this.findGame = function() {

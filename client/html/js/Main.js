@@ -15,10 +15,10 @@ APP.Difficulty = {
     opponentPaddleSpeed: 0.3
   },
   Multiplayer: {
-    ballspeed: 0.1 //2
+    ballspeed: 0.5 //2
   }
 };
-var InitialBallSpeed = 0.1; //1.2; // Speed of the ball at start of each round
+var InitialBallSpeed = 0.5; //1.2; // Speed of the ball at start of each round
 
 APP.Model = {score: {me: 0, opponent: 0}};
 
@@ -133,22 +133,29 @@ function serverUpdateReceived(data) {
   };
 
   // Update the opponent's paddle position if present
-  if (data.paddlePosition && data.paddleVelocity) {
-    console.log('Got opponent paddle velocity: ', data.paddleVelocity);
-    opponentPaddle.moveTo(mirror(data.paddlePosition));
-    opponentPaddle.physicsBody.velocity.copy(mirror(data.paddleVelocity));
+  if (data.paddle) {
+    console.log('Got opponent paddle update: ', data.paddle);
+    opponentPaddle.moveTo(mirror(data.paddle.position));
+    opponentPaddle.physicsBody.velocity.copy(mirror(data.paddle.velocity));
     opponentPaddle.lastUpdateTime = moment().utc().valueOf();
   }
 
-  if (data.ballPosition && data.ballVelocity && data.ballAngularVelocity) {
-    var mirroredPos = mirror(data.ballPosition);
+  if (data.ball) {
+    console.log('Got ball update: ', data.ball);
+    var mirroredPos = mirror(data.ball.position);
     ball.position.copy(mirroredPos);
     ball.physicsBody.position.copy(mirroredPos);
-    ball.physicsBody.angularVelocity.copy(mirror(data.ballAngularVelocity));
-    ball.physicsBody.velocity.copy(mirror(data.ballVelocity));
+    ball.physicsBody.velocity.copy(mirror(data.ball.velocity));
+    ball.physicsBody.angularVelocity.copy(mirror(data.ball.angularVelocity));
   }
 
   //TODO other properties from msg
+}
+
+function latencyUpdate(data) {
+  console.log('Latency: (ms) ', data);
+
+  //TODO update latency value in the UI
 }
 
 function networkCalllback(message, data) {
@@ -171,6 +178,9 @@ function networkCalllback(message, data) {
       break;
     case networking.messages.gameStarting:
       multiplayerGameStarting(data);
+      break;
+    case networking.messages.latency:
+      latencyUpdate(data);
       break;
   }
 }
