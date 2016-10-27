@@ -101,6 +101,11 @@ function init() {
   ui.update();
 }
 
+function isMultiPlayerHost() {
+  return ((APP.Model.gameMode === APP.GameMode.MultiPlayer) &&
+  (APP.Model.multiplayer.youAreHost));
+}
+
 function multiplayerGameEnded() {
   delete APP.Model.multiplayer;
   showMenu();
@@ -149,11 +154,22 @@ function serverUpdateReceived(data) {
     ball.physicsBody.angularVelocity.copy(mirror(data.ball.angularVelocity));
   }
 
+  if (data.score) {
+    if (APP.Model.multiplayer.youAreHost) {
+      console.log('ERROR - receiving score update as host!');
+      return;
+    }
+
+    APP.Model.score.me = data.score.newOtherPlayerScore;
+    APP.Model.score.opponent = data.score.newHostScore;
+    updateScore(data.score.otherPlayerScored);
+  }
+
   //TODO other properties from msg
 }
 
 function latencyUpdate(data) {
-  console.log('Latency: (ms) ', data);
+//  console.log('Latency: (ms) ', data);
 
   //TODO update latency value in the UI
 }
@@ -167,7 +183,7 @@ function networkCalllback(message, data) {
       break;
     case networking.messages.connected:
       APP.Model.connectedToServer = true;
-      ui.update()
+      ui.update();
       break;
     case networking.messages.disconnected:
       serverConnectionDisconnected(data);
@@ -258,11 +274,11 @@ function onWindowResize() {
 }
 
 function updateScore(iScored) {
+  console.log('updateScore: ', iScored);
+
   if (iScored) {
-    APP.Model.score.me++;
     ui.displayFadingLargeText('You scored!', 200);
   } else {
-    APP.Model.score.opponent++;
     ui.displayFadingLargeText(APP.Model.opponentName + ' scored!', 200);
   }
   ui.update();
@@ -274,48 +290,56 @@ function updateScore(iScored) {
   opponentPaddle.moveTo(opponentPaddleStartLocation, environment);
   delete opponentPaddle.movementTarget;
 
-  // TODO update scored -status to networking
+  if ((APP.Model.gameMode === APP.GameMode.SinglePlayer) ||
+    (APP.Model.multiplayer.youAreHost)) {
+    // Check if the game was won
+    var winMsg;
+    if (APP.Model.score.me >= EndScore) {
+      winMsg = 'You won!';
+    } else if (APP.Model.score.opponent >= EndScore) {
+      winMsg = APP.Model.opponentName + ' won!';
+    }
 
-  //TODO update won -status to networking also
+    if (APP.Model.multiplayer.youAreHost) {
+      networking.updateScoreState(iScored, APP.Model.score.me,
+        APP.Model.score.opponent);
 
-  // Check if the game was won
-  var winMsg;
-  if (APP.Model.score.me >= EndScore) {
-    winMsg = 'You won!';
-  } else if (APP.Model.score.opponent >= EndScore) {
-    winMsg = APP.Model.opponentName + ' won!';
-  }
-  if (winMsg) {
-    APP.Model.gameRunning = false;
+      //TODO update won -status to networking also
+    }
+
+    if (winMsg) {
+      APP.Model.gameRunning = false;
+      setTimeout(function () {
+        ui.displayFadingLargeText(winMsg, 200);
+        setTimeout(function () {
+          console.log('Showing menu again..');
+          showMenu();
+        }, 1700);
+      }, 1500);
+
+      return;
+    }
+
     setTimeout(function() {
-      ui.displayFadingLargeText(winMsg, 200);
-      setTimeout(function() {
-        console.log('Showing menu again..');
-        showMenu();
-      }, 1700);
-    }, 1500);
-
-    return;
+      // Launch the ball again!
+      ball.physicsBody.velocity.set(0, 0, InitialBallSpeed);
+    }, 1200);
   }
 
   // Reset the ball to the middle
   activateBall(true);
-
-  setTimeout(function() {
-    // Launch the ball again!
-    ball.physicsBody.velocity =
-      new CANNON.Vec3(0, 0, APP.Model.difficulty.ballspeed);
-  }, 1200);
 }
 
 function checkForScoring() {
   // Check if ball has passed behind my paddle ie. opponent scores
   if (ball.position.z > (myPaddle.position.z + ball.Radius)) {
+    APP.Model.score.opponent++;
     updateScore(false);
   }
 
   // Check if ball has passed behind the opponent paddle ie. I have scored.
   if (ball.position.z < (opponentPaddle.position.z - ball.Radius)) {
+    APP.Model.score.me++;
     updateScore(true);
   }
 }

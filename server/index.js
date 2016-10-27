@@ -34,7 +34,7 @@ io.on('connection', function(socket){
       delete currentPlayers[game.host.socketId];
       delete currentPlayers[game.otherPlayer.socketId];
 
-      clearInterval(game.updateTimer);
+      // clearInterval(game.updateTimer);
       var notifySocketId = (socket.id === game.host.socketId) ?
         game.otherPlayer.socketId : game.host.socketId;
       var notifySocket = io.sockets.connected[notifySocketId];
@@ -72,7 +72,7 @@ io.on('connection', function(socket){
         delete game.otherPlayer.stateUpdate;
       });
     }
-  }
+  };
 
   socket.on('client-ping', function(msg, callback) {
     // console.log('Received client-ping', socket.id, msg);
@@ -110,8 +110,8 @@ io.on('connection', function(socket){
       currentPlayers[socket.id] = game.otherPlayer;
       callback({status: 'connected'});
 
-      game.updateTimer =
-        setInterval(sendUpdate.bind(game, game), UpdateInterval);
+      // game.updateTimer =
+      //   setInterval(sendUpdate.bind(game, game), UpdateInterval);
 
       // Notify both players about the game about to start
       var hostSocket = io.sockets.connected[hostId];
@@ -138,26 +138,28 @@ io.on('connection', function(socket){
     var player = currentPlayers[socket.id];
     if (!player) {
       console.log('ERROR: client-update: Player not found!');
-      return
+      return;
     }
 
     // Insert / update the pending state update; will be sent to the other
     // player at the next possible moment in the update tick
     var stateUpdate = player.stateUpdate || {};
-
-    if (msg.paddle) {
-      stateUpdate.paddle = msg.paddle;
-    }
-
-    if (msg.ball) {
-      stateUpdate.ball = msg.ball;
-    }
-
-    //TODO scoring updates
+    stateUpdate.paddle = msg.paddle;
+    stateUpdate.ball = msg.ball;
+    stateUpdate.score = msg.score;
 
     //TODO winning updates
 
     player.stateUpdate = stateUpdate;
+
+    // Trigger sending the update(s) to the player(s)
+    var game = currentGames[socket.id];
+    if (!game) {
+      console.log('ERROR: client-update: game not found');
+      return;
+    }
+
+    sendUpdate(game);
   });
 
   socket.on('quit-game', function(msg, callback) {

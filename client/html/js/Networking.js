@@ -34,6 +34,23 @@ APP.Networking = function(callback) {
     delete self.paddleUpdate;
     delete self.prevPaddleUpdate;
     delete self.ballUpdate;
+    delete self.score;
+  };
+
+  this.updateScoreState = function(hostScored, newHostScore, newOtherPlayerScore) {
+    assert(APP.Model.multiplayer.youAreHost);
+
+    var scoreUpdate = self.scoreUpdate || {};
+
+    if (hostScored) {
+      scoreUpdate.hostScored = true;
+    } else {
+      scoreUpdate.otherPlayerScored = true;
+    }
+    scoreUpdate.newHostScore = APP.Model.score.me;
+    scoreUpdate.newOtherPlayerScore = APP.Model.score.opponent;
+
+    self.scoreUpdate = scoreUpdate;
   };
 
   this.updatePaddleState = function(position, velocity) {
@@ -79,19 +96,20 @@ APP.Networking = function(callback) {
       delete self.ballUpdate;
     }
 
-    //TODO scoring
+    if (self.scoreUpdate) {
+      msg.score = self.scoreUpdate;
+      delete self.scoreUpdate;
+    }
 
     //TODO game winning
 
     //TODO recalculate current latency
     if (Object.keys(msg).length > 0) {
       self.updatePending = true;
-      console.log('sending msg: ', msg);
 
       var then = moment().utc().valueOf();
       this.socket.emit('client-update', msg, function() {
         self.updatePending = false;
-        console.log('client-update ACKed by server');
         var now = moment().utc().valueOf();
         callback(self.messages.latency, (now - then));
       });
