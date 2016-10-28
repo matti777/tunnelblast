@@ -144,11 +144,10 @@ io.on('connection', function(socket){
     // Insert / update the pending state update; will be sent to the other
     // player at the next possible moment in the update tick
     var stateUpdate = player.stateUpdate || {};
-    stateUpdate.paddle = msg.paddle;
-    stateUpdate.ball = msg.ball;
-    stateUpdate.score = msg.score;
-
-    //TODO winning updates
+    stateUpdate.paddle = msg.paddle || stateUpdate.paddle;
+    stateUpdate.ball = msg.ball || stateUpdate.ball;
+    stateUpdate.score = msg.score || stateUpdate.score;
+    stateUpdate.win = msg.win || stateUpdate.win;
 
     player.stateUpdate = stateUpdate;
 

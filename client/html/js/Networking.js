@@ -53,6 +53,20 @@ APP.Networking = function(callback) {
     self.scoreUpdate = scoreUpdate;
   };
 
+  this.updateWinState = function(hostWon) {
+    assert(APP.Model.multiplayer.youAreHost);
+
+    var winUpdate = self.winUpdate || {};
+
+    if (hostWon) {
+      winUpdate.hostWon = true;
+    } else {
+      winUpdate.otherPlayerWon = true;
+    }
+
+    self.winUpdate = winUpdate;
+  };
+
   this.updatePaddleState = function(position, velocity) {
     assert(position && velocity);
 
@@ -73,7 +87,10 @@ APP.Networking = function(callback) {
   this.updateBallState = function(position, velocity, angularVelocity) {
     assert(position && velocity && angularVelocity);
 
-    this.ballUpdate = {position, velocity, angularVelocity};
+    self.ballUpdate = {position, velocity, angularVelocity};
+
+    // Send ball updates immediately to minimize twitching
+    self.sendUpdate();
   };
 
   // Sends any updates to the server unless an update request is pending
@@ -101,9 +118,11 @@ APP.Networking = function(callback) {
       delete self.scoreUpdate;
     }
 
-    //TODO game winning
+    if (self.winUpdate) {
+      msg.win = self.winUpdate;
+      delete self.winUpdate;
+    }
 
-    //TODO recalculate current latency
     if (Object.keys(msg).length > 0) {
       self.updatePending = true;
 

@@ -25,7 +25,7 @@ APP.Model = {score: {me: 0, opponent: 0}};
 // Constants
 var PaddleDistance = 1.7; // From the camera
 var PhysicsGravity = 0.0; // m/s^2 (-9.81 to simulate real-world)
-var EndScore = 5;
+var EndScore = 1;
 
 // 'Globals'
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
@@ -107,6 +107,8 @@ function isMultiPlayerHost() {
 }
 
 function multiplayerGameEnded() {
+  console.log('Multiplayer game ended');
+
   delete APP.Model.multiplayer;
   showMenu();
 }
@@ -165,7 +167,14 @@ function serverUpdateReceived(data) {
     updateScore(data.score.otherPlayerScored);
   }
 
-  //TODO other properties from msg
+  if (data.win) {
+    if (APP.Model.multiplayer.youAreHost) {
+      console.log('ERROR - receiving win update as host!');
+      return;
+    }
+    console.log('Got won update');
+    showWinMessage(data.win.otherPlayerWon);
+  }
 }
 
 function latencyUpdate(data) {
@@ -273,6 +282,24 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+function showWinMessage(iWon) {
+  var winMsg = (iWon) ? 'You won!' : APP.Model.opponentName + ' won!';
+
+  APP.Model.gameRunning = false;
+  setTimeout(function () {
+    ui.displayFadingLargeText(winMsg, 200);
+    setTimeout(function () {
+      if (APP.Model.multiplayer.youAreHost) {
+        // Make the host quit the game; the other player will end up in the menu
+        // as the game disconnects.
+        networking.quitGame();
+        console.log('Showing menu again..');
+        showMenu();
+      }
+    }, 1700);
+  }, 1500);
+}
+
 function updateScore(iScored) {
   console.log('updateScore: ', iScored);
 
@@ -293,31 +320,26 @@ function updateScore(iScored) {
   if ((APP.Model.gameMode === APP.GameMode.SinglePlayer) ||
     (APP.Model.multiplayer.youAreHost)) {
     // Check if the game was won
-    var winMsg;
+    var youWon, opponentWon;
+
     if (APP.Model.score.me >= EndScore) {
-      winMsg = 'You won!';
+      youWon = true;
     } else if (APP.Model.score.opponent >= EndScore) {
-      winMsg = APP.Model.opponentName + ' won!';
+      opponentWon = true;
     }
 
     if (APP.Model.multiplayer.youAreHost) {
       networking.updateScoreState(iScored, APP.Model.score.me,
         APP.Model.score.opponent);
 
-      //TODO update won -status to networking also
+      if (youWon || opponentWon) {
+        networking.updateWinState(youWon);
+      }
     }
 
-    if (winMsg) {
-      APP.Model.gameRunning = false;
-      setTimeout(function () {
-        ui.displayFadingLargeText(winMsg, 200);
-        setTimeout(function () {
-          console.log('Showing menu again..');
-          showMenu();
-        }, 1700);
-      }, 1500);
-
-      return;
+    if (youWon || opponentWon) {
+      showWinMessage(youWon);
+      return; 
     }
 
     setTimeout(function() {
