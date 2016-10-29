@@ -29,6 +29,7 @@ var EndScore = 1;
 
 // 'Globals'
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
+var ballPointLight;
 var stats;
 var ui, input, physics, networking;
 var myPaddleStartLocation, opponentPaddleStartLocation;
@@ -58,7 +59,7 @@ function init() {
   scene.add(camera);
 
   // Add a point light to where our camera is
-  var pointLight = new THREE.PointLight(0xFFFFFF, 1, environment.Length);
+  var pointLight = new THREE.PointLight(0xFFFFFF, 0.8, environment.Length);
   camera.add(pointLight);
 
   // Add my paddle and position it somewhat in front of the camera
@@ -75,6 +76,10 @@ function init() {
 
   // Add the ball
   ball = new APP.Ball();
+
+  // Create a lightsource at the ball
+  ballPointLight = new THREE.PointLight(0xCCCCFF, 0.5, 2.5);
+  ball.add(ballPointLight);
 
   // Initialize physics
   physics = new APP.Physics(PhysicsGravity, ball, myPaddle,
@@ -101,9 +106,17 @@ function init() {
   ui.update();
 }
 
+function isSinglePlayer() {
+  return (APP.Model.gameMode == APP.GameMode.SinglePlayer);
+}
+
+function isMultiPlayer() {
+  return (APP.Model.gameMode == APP.GameMode.MultiPlayer);
+}
+
 function isMultiPlayerHost() {
   return ((APP.Model.gameMode === APP.GameMode.MultiPlayer) &&
-  (APP.Model.multiplayer.youAreHost));
+  APP.Model.multiplayer && APP.Model.multiplayer.youAreHost);
 }
 
 function multiplayerGameEnded() {
@@ -157,7 +170,7 @@ function serverUpdateReceived(data) {
   }
 
   if (data.score) {
-    if (APP.Model.multiplayer.youAreHost) {
+    if (isMultiPlayerHost()) {
       console.log('ERROR - receiving score update as host!');
       return;
     }
@@ -168,7 +181,7 @@ function serverUpdateReceived(data) {
   }
 
   if (data.win) {
-    if (APP.Model.multiplayer.youAreHost) {
+    if (isMultiPlayerHost()) {
       console.log('ERROR - receiving win update as host!');
       return;
     }
@@ -267,7 +280,7 @@ function startGame(mode, difficulty) {
 
     // Multiplayer game starts immediately for the host; after the first
     // received server update for the other player
-    if (APP.Model.multiplayer.youAreHost) {
+    if (isMultiPlayerHost()) {
       ball.physicsBody.velocity.set(0, 0, InitialBallSpeed);
     }
   }
@@ -289,7 +302,7 @@ function showWinMessage(iWon) {
   setTimeout(function () {
     ui.displayFadingLargeText(winMsg, 200);
     setTimeout(function () {
-      if (APP.Model.multiplayer.youAreHost) {
+      if (isSinglePlayer() || isMultiPlayerHost()) {
         // Make the host quit the game; the other player will end up in the menu
         // as the game disconnects.
         networking.quitGame();
@@ -301,8 +314,6 @@ function showWinMessage(iWon) {
 }
 
 function updateScore(iScored) {
-  console.log('updateScore: ', iScored);
-
   if (iScored) {
     ui.displayFadingLargeText('You scored!', 200);
   } else {
@@ -317,8 +328,7 @@ function updateScore(iScored) {
   opponentPaddle.moveTo(opponentPaddleStartLocation, environment);
   delete opponentPaddle.movementTarget;
 
-  if ((APP.Model.gameMode === APP.GameMode.SinglePlayer) ||
-    (APP.Model.multiplayer.youAreHost)) {
+  if (isSinglePlayer() ||  isMultiPlayerHost()) {
     // Check if the game was won
     var youWon, opponentWon;
 
@@ -328,7 +338,8 @@ function updateScore(iScored) {
       opponentWon = true;
     }
 
-    if (APP.Model.multiplayer.youAreHost) {
+    if (isMultiPlayerHost()) {
+      // Send network events about scoring & winning
       networking.updateScoreState(iScored, APP.Model.score.me,
         APP.Model.score.opponent);
 
@@ -379,8 +390,7 @@ function animate(time) {
     // Physics tick
     physics.update(time);
 
-    if ((APP.Model.gameMode === APP.GameMode.SinglePlayer) ||
-      (APP.Model.multiplayer.youAreHost)) {
+    if (isSinglePlayer() || isMultiPlayerHost()) {
       // Check if either player scored this frame
       checkForScoring();
     }
@@ -389,7 +399,7 @@ function animate(time) {
     networking.updatePaddleState(myPaddle.physicsBody.position,
       myPaddle.physicsBody.velocity);
 
-    if (APP.Model.gameMode === APP.GameMode.MultiPlayer) {
+    if (isMultiPlayer()) {
       // Update the opponent paddle position according to its velocity
       opponentPaddle.moveWithVelocity();
     }

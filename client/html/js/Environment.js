@@ -40,13 +40,15 @@ APP.Environment = function() {
   };
 
   // Create a material for the given texture
-  function createMaterial(texture) {
+  function createMaterial(texture, normalMapTexture) {
     return new THREE.MeshPhongMaterial({
       color: 0xDDDDDD,
       side: THREE.DoubleSide,
       specular: 0x222222,
-      shininess: 35,
-      map: texture
+      shininess: 195,
+      normalScale: new THREE.Vector2(4, 4),
+      map: texture,
+      normalMap: normalMapTexture
     });
   }
 
@@ -54,6 +56,7 @@ APP.Environment = function() {
   this.initVisuals = function() {
     var geometry = new THREE.BoxGeometry(this.Width, this.Height, this.Length);
 
+    // Create & load texture maps
     var texture1 = new THREE.Texture();
     texture1.wrapS = THREE.RepeatWrapping;
     texture1.wrapT = THREE.RepeatWrapping;
@@ -71,9 +74,26 @@ APP.Environment = function() {
       texture2.needsUpdate = true;
     });
 
+    // Create & load normal maps
+    var normalMap1 = new THREE.Texture();
+    normalMap1.wrapS = THREE.RepeatWrapping;
+    normalMap1.wrapT = THREE.RepeatWrapping;
+    normalMap1.repeat.set(6, 2);
+    var normalMap2 = new THREE.Texture();
+    normalMap2.wrapS = THREE.RepeatWrapping;
+    normalMap2.wrapT = THREE.RepeatWrapping;
+    normalMap2.repeat.set(2, 3);
+
+    imageLoader.load('textures/tunnel_wall_normalmap.jpg', function onLoaded(image) {
+      normalMap1.image = image;
+      normalMap1.needsUpdate = true;
+      normalMap2.image = image;
+      normalMap2.needsUpdate = true;
+    });
+
     // Create different materials for walls and floor/ceiling
-    var material1 = createMaterial(texture1);
-    var material2 = createMaterial(texture2);
+    var material1 = createMaterial(texture1, normalMap1);
+    var material2 = createMaterial(texture2, normalMap2);
 
     var faceMaterials = [
       material1, material1, material2, material2, material2,
