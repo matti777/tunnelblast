@@ -282,6 +282,10 @@ function startGame(mode, difficulty) {
     // received server update for the other player
     if (isMultiPlayerHost()) {
       ball.physicsBody.velocity.set(0, 0, InitialBallSpeed);
+
+      // Also send ball velocity update to the other player
+      networking.updateBallState(ball.physicsBody.position,
+        ball.physicsBody.velocity, ball.physicsBody.angularVelocity);
     }
   }
 
@@ -328,7 +332,7 @@ function updateScore(iScored) {
   opponentPaddle.moveTo(opponentPaddleStartLocation, environment);
   delete opponentPaddle.movementTarget;
 
-  if (isSinglePlayer() ||  isMultiPlayerHost()) {
+  if (isSinglePlayer() || isMultiPlayerHost()) {
     // Check if the game was won
     var youWon, opponentWon;
 
@@ -356,6 +360,12 @@ function updateScore(iScored) {
     setTimeout(function() {
       // Launch the ball again!
       ball.physicsBody.velocity.set(0, 0, InitialBallSpeed);
+
+      if (isMultiPlayerHost()) {
+        // Also send ball velocity update to the other player
+        networking.updateBallState(ball.physicsBody.position,
+          ball.physicsBody.velocity, ball.physicsBody.angularVelocity);
+      }
     }, 1200);
   }
 

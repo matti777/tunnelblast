@@ -73,7 +73,7 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment, net
       this.adjustBallVelocityVector(NegativeZAxis);
     } else if (body.id === opponentPaddle.physicsBody.id) {
       // Only handle opponent paddle collisions in single player mode
-      if (APP.Model.gameMode === APP.GameMode.SinglePlayer) {
+      if (isSinglePlayer()) {
         // Adjust ball bounce angle slightly by the contact point
         ballv.x += ((localR.x / pw2) * BallBounceAngleModifier);
         ballv.y += ((localR.y / ph2) * BallBounceAngleModifier);
@@ -92,7 +92,7 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment, net
 
     // If hit anything else then opponent's paddle while in sinpleplayer mode,
     // update the computer player's prediction of where the ball will hit
-    if (APP.Model.gameMode === APP.GameMode.SinglePlayer) {
+    if (isSinglePlayer()) {
       if (body.id === opponentPaddle.physicsBody.id) {
         // Opponent paddle hit in single player mode; start moving to center
         opponentPaddle.setMovementTarget(opponentPaddleStartLocation);
