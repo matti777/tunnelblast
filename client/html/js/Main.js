@@ -29,13 +29,16 @@ var EndScore = 1;
 
 // 'Globals'
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
-var ballPointLight;
+var particleSystem, ballPointLight, clock;
 var stats;
 var ui, input, physics, networking;
 var myPaddleStartLocation, opponentPaddleStartLocation;
 
 function init() {
   scene = new THREE.Scene();
+
+  // Start a clock for timing particle spawns
+  clock = new THREE.Clock(true);
 
   // Start Networking
   networking = new APP.Networking(networkCalllback);
@@ -80,6 +83,10 @@ function init() {
   // Create a lightsource at the ball
   ballPointLight = new THREE.PointLight(0xCCCCFF, 0.5, 2.5);
   ball.add(ballPointLight);
+
+  // Attach a particle system
+  particleSystem = new THREE.GPUParticleSystem({maxParticles: 250000});
+  scene.add(particleSystem);
 
   // Initialize physics
   physics = new APP.Physics(PhysicsGravity, ball, myPaddle,
@@ -244,6 +251,7 @@ function activateBall(activate) {
     }
   } else {
     scene.remove(ball);
+    scene.remove(particleSystem);
     physics.world.removeBody(ball.physicsBody);
   }
 }
@@ -387,6 +395,38 @@ function checkForScoring() {
   }
 }
 
+var ParticleSystemOptions = {
+  position: new THREE.Vector3(),
+  positionRandomness: 0.26,
+  velocity: new THREE.Vector3(),
+  velocityRandomness: 0.001,
+  color: 0xCCAAFF,
+  colorRandomness: 0.2,
+  turbulence: 0,
+  lifetime: 2,
+  size: 5,
+  sizeRandomness: 1
+};
+
+var ParticleSpawnRate = 15000; // Number of particles spawned per second
+
+function updateParticleSystem() {
+  var particlesToSpawn = ParticleSpawnRate * clock.getDelta();
+  var options = ParticleSystemOptions;
+
+  // Make the particle 'tail' point to the opposite direction
+  options.velocity.x = -ball.physicsBody.velocity.x / 200;
+  options.velocity.y = -ball.physicsBody.velocity.y / 200;
+  options.velocity.z = -ball.physicsBody.velocity.z / 200;
+  options.position.copy(ball.position);
+
+  for (var i = 0; i < particlesToSpawn; i++) {
+    particleSystem.spawnParticle(options);
+  }
+
+  particleSystem.update(clock.getElapsedTime());
+}
+
 function animate(time) {
   stats.begin();
 
@@ -396,6 +436,11 @@ function animate(time) {
   if (APP.Model.gameRunning) {
     // Update paddle velocity from it's position history
     myPaddle.updateVelocity();
+
+    if (particleSystem.parent) {
+      // Update the particle system (spawn more particles)
+      updateParticleSystem();
+    }
 
     // Physics tick
     physics.update(time);
