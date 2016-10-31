@@ -105,7 +105,7 @@ APP.Paddle = function(type, environment) {
     };
     this.positionSamples.push(positionSample);
 
-    var MeasurementInterval = 250; // In milliseconds
+    var MeasurementInterval = 200; // In milliseconds
 
     // Remove any samples older than MeasurementInterval
     while (true) {

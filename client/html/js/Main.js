@@ -18,14 +18,16 @@ APP.Difficulty = {
     ballspeed: 0.5 //2
   }
 };
-var InitialBallSpeed = 0.5; //1.2; // Speed of the ball at start of each round
+var InitialBallSpeed = 1.2; // Speed of the ball at start of each round
 
 APP.Model = {score: {me: 0, opponent: 0}};
 
 // Constants
 var PaddleDistance = 1.7; // From the camera
 var PhysicsGravity = 0.0; // m/s^2 (-9.81 to simulate real-world)
-var EndScore = 1;
+var EndScore = 5;
+var MaxBallSpeedMultiplier = 1.75;
+var MinBallLightIntensity = 0.3;
 
 // 'Globals'
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
@@ -81,7 +83,7 @@ function init() {
   ball = new APP.Ball();
 
   // Create a lightsource at the ball
-  ballPointLight = new THREE.PointLight(0xCCCCFF, 0.5, 2.5);
+  ballPointLight = new THREE.PointLight(0xDDAAFF, MinBallLightIntensity, 2.5);
   ball.add(ballPointLight);
 
   // Attach a particle system
@@ -246,6 +248,9 @@ function activateBall(activate) {
     if (!ball.parent) {
       scene.add(ball);
     }
+    if (!particleSystem.parent) {
+      scene.add(particleSystem);
+    }
     if (!ball.physicsBody.world) {
       physics.world.addBody(ball.physicsBody);
     }
@@ -399,7 +404,7 @@ var ParticleSystemOptions = {
   position: new THREE.Vector3(),
   positionRandomness: 0.26,
   velocity: new THREE.Vector3(),
-  velocityRandomness: 0.001,
+  velocityRandomness: 0.2,
   color: 0xCCAAFF,
   colorRandomness: 0.2,
   turbulence: 0,
@@ -409,9 +414,11 @@ var ParticleSystemOptions = {
 };
 
 var ParticleSpawnRate = 15000; // Number of particles spawned per second
+var ParticleMinBallSpeedMultiplier = 1.3;
+var ParticleMaxBallSpeedMultiplier = 1.75;
 
 function updateParticleSystem() {
-  var particlesToSpawn = ParticleSpawnRate * clock.getDelta();
+  var particlesForFrame = ParticleSpawnRate * clock.getDelta();
   var options = ParticleSystemOptions;
 
   // Make the particle 'tail' point to the opposite direction
@@ -420,9 +427,17 @@ function updateParticleSystem() {
   options.velocity.z = -ball.physicsBody.velocity.z / 200;
   options.position.copy(ball.position);
 
+  // Based on the ball speed, calculate the amount of particles to spawn
+  var speedFactor = linearStep(ParticleMinBallSpeedMultiplier,
+    ParticleMaxBallSpeedMultiplier, ball.speedMultiplier);
+  var particlesToSpawn = lerp(0, particlesForFrame, speedFactor);
+
   for (var i = 0; i < particlesToSpawn; i++) {
     particleSystem.spawnParticle(options);
   }
+
+  // Also adjust the ball light's intensity by the speed factor
+  ballPointLight.intensity = lerp(MinBallLightIntensity, 1.0, speedFactor);
 
   particleSystem.update(clock.getElapsedTime());
 }
@@ -437,10 +452,8 @@ function animate(time) {
     // Update paddle velocity from it's position history
     myPaddle.updateVelocity();
 
-    if (particleSystem.parent) {
-      // Update the particle system (spawn more particles)
-      updateParticleSystem();
-    }
+    // Update the particle system (spawn more particles)
+    updateParticleSystem();
 
     // Physics tick
     physics.update(time);
