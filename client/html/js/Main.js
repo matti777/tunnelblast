@@ -31,16 +31,16 @@ var MinBallLightIntensity = 0.3;
 
 // 'Globals'
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
-var particleSystem, ballPointLight, clock;
-var stats;
+var particleSystem, ballPointLight, particleClock;
 var ui, input, physics, networking;
 var myPaddleStartLocation, opponentPaddleStartLocation;
+var previousFrameTime;
 
 function init() {
   scene = new THREE.Scene();
 
-  // Start a clock for timing particle spawns
-  clock = new THREE.Clock(true);
+  // Start a particleClock for timing particle spawns
+  particleClock = new THREE.Clock(true);
 
   // Start Networking
   networking = new APP.Networking(networkCalllback);
@@ -99,11 +99,6 @@ function init() {
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   $('#renderer').append(renderer.domElement)
-
-  // Add a statistics panel
-  stats = new Stats();
-  stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
-  document.body.appendChild(stats.dom);
 
   // Attach input handler(s)
   input = new APP.Input(renderer, camera, myPaddle);
@@ -200,9 +195,7 @@ function serverUpdateReceived(data) {
 }
 
 function latencyUpdate(data) {
-//  console.log('Latency: (ms) ', data);
-
-  //TODO update latency value in the UI
+  ui.addLatencySample(data);
 }
 
 function networkCalllback(message, data) {
@@ -418,7 +411,7 @@ var ParticleMinBallSpeedMultiplier = 1.3;
 var ParticleMaxBallSpeedMultiplier = 1.75;
 
 function updateParticleSystem() {
-  var particlesForFrame = ParticleSpawnRate * clock.getDelta();
+  var particlesForFrame = ParticleSpawnRate * particleClock.getDelta();
   var options = ParticleSystemOptions;
 
   // Make the particle 'tail' point to the opposite direction
@@ -439,14 +432,17 @@ function updateParticleSystem() {
   // Also adjust the ball light's intensity by the speed factor
   ballPointLight.intensity = lerp(MinBallLightIntensity, 1.0, speedFactor);
 
-  particleSystem.update(clock.getElapsedTime());
+  particleSystem.update(particleClock.getElapsedTime());
 }
 
 function animate(time) {
-  stats.begin();
-
   // Render the visuals
   render();
+
+  if (previousFrameTime) {
+    var secondsPerFrame = (time - previousFrameTime) / 1000.0;
+    ui.addFpsSample(1.0 / secondsPerFrame);
+  }
 
   if (APP.Model.gameRunning) {
     // Update paddle velocity from it's position history
@@ -476,7 +472,7 @@ function animate(time) {
   // Request next frame to be drawn after this one completes
   requestAnimationFrame(animate);
 
-  stats.end();
+  previousFrameTime = time;
 }
 
 function render() {

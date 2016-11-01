@@ -55,6 +55,15 @@ canvas {
     transform: translate(-50%, 0%);
 }
 
+#stats-container {
+    pointer-events: none;
+    position: absolute;
+    bottom: 3vh;
+    left: 3vh;
+    font-size: 2vh;
+    color: white;
+}
+
 #large-text-container {
     pointer-events: none;
     position: absolute;

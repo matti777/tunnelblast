@@ -1,6 +1,9 @@
 // Define namespace
 var APP = APP || {};
 
+var FpsMeasurementInterval = 1000;
+var LatencyMeasurementInterval = 3000;
+
 APP.Ui = function(networking) {
   var self = this;
 
@@ -88,6 +91,60 @@ APP.Ui = function(networking) {
     }, 1000);
   };
 
+  this.updateStats = function() {
+    var now = moment().utc().valueOf();
+
+    // Remove any FPS samples older than measurement interval
+    while (this.fpsSamples.length > 0) {
+      if ((now - this.fpsSamples[0].time) > FpsMeasurementInterval) {
+        this.fpsSamples.shift();
+      } else {
+        break;
+      }
+    }
+
+    // Remove any latency samples older than measurement interval
+    while (this.latencySamples.length > 0) {
+      if ((now - this.latencySamples[0].time) > LatencyMeasurementInterval) {
+        this.latencySamples.shift();
+      } else {
+        break;
+      }
+    }
+
+    // Calculate FPS to display as an average over the measurement interval
+    var avgFps = 0;
+    if (this.fpsSamples.length > 0) {
+      for (var i = 0; i < this.fpsSamples.length; i++) {
+        avgFps += this.fpsSamples[i].fps;
+      }
+      avgFps = Math.round(avgFps / this.fpsSamples.length);
+    }
+
+    // Calculate Latency to display as an average over the measurement interval
+    var avgLatency = 0;
+    if (this.latencySamples.length > 0) {
+      for (var i = 0; i < this.latencySamples.length; i++) {
+        avgLatency += this.latencySamples[i].latency;
+      }
+      avgLatency = Math.round(avgLatency / this.latencySamples.length);
+    }
+
+    var fpsString = (avgFps > 0) ? avgFps : '-';
+    var latencyString = (APP.Model.connectedToServer) ? (avgLatency + ' ms') : '-';
+
+    $('#stats-container').html('FPS: ' + fpsString + '<br>' +
+      'Latency: ' + latencyString);
+  };
+
+  this.addFpsSample = function(fps) {
+    this.fpsSamples.push({fps: fps, time: moment().utc().valueOf()});
+  };
+
+  this.addLatencySample = function(latency) {
+    this.latencySamples.push({latency: latency, time: moment().utc().valueOf()});
+  };
+
   this.showMenu = function(show) {
     var doStartSinglePlayerGame = function(difficulty) {
       self.doStartGameAnimations(function() {
@@ -137,6 +194,11 @@ APP.Ui = function(networking) {
     });
   };
 
+  this.fpsSamples = [];
+  this.latencySamples = [];
+
   this.update();
+
+  setInterval(this.updateStats.bind(this), 1000);
 };
 APP.Ui.constructor = APP.Ui;
