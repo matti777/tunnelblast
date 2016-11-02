@@ -74,7 +74,7 @@ canvas {
     background-image: url("../images/audio_on.png");
 }
 
-#audio-toggle-button .nosound {
+#audio-toggle-button.nosound {
     background-image: url("../images/audio_off.png");
 }
 

@@ -96,10 +96,12 @@ APP.Audio = function() {
 
     localStorage.setItem('audioEnabled', enable);
 
-    if (enable) {
+    if (enable === true) {
+      console.log('resuming audio..');
       this.context.resume();
      // this.musicSource.start();
     } else {
+      console.log('suspending audio..');
       this.context.suspend();
       //this.musicSource.stop();
     }
@@ -112,7 +114,6 @@ APP.Audio = function() {
     this.context = new (window.AudioContext || window.webkitAudioContext)();
     this.audioBuffers = {};
 
-    APP.Model.audioEnabled = localStorage.getItem('audioEnabled');
     console.log('Audio enabled at startup?', APP.Model.audioEnabled);
     this.enableAudio(APP.Model.audioEnabled);
 
@@ -120,12 +121,6 @@ APP.Audio = function() {
       if (success) {
         console.log('Playing music..');
         self.musicSource = self.playBuffer(MusicFilename, true, 0.5);
-
-
-        // if (APP.Model.audioEnabled !== true) {
-        //   console.log('Audio is disabled.');
-        //  self.musicSource.stop();
-        // }
       }
     });
 

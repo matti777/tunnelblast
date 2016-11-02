@@ -51,8 +51,8 @@ APP.Ui = function(networking) {
     }
 
     $('#multi-player').toggleClass('disabled', !APP.Model.connectedToServer);
-
     $('#nickname-input').val(APP.Model.myName);
+    self.audioToggleButton.toggleClass('nosound', !APP.Model.audioEnabled);
   };
 
   function showCountdownTimer(timerValue, completionCb) {
@@ -203,11 +203,9 @@ APP.Ui = function(networking) {
   this.audioToggleButton.bind('click', function() {
     console.log('Clicked on audio toggle button');
 
-    self.audioToggleButton.toggleClass('nosound', APP.Model.enableAudio);
+    audio.enableAudio(!APP.Model.audioEnabled);
 
-    //TODO why is APP.Model.enableAudio undefined here?
-    console.log('APP.Model.enableAudio when calling', APP.Model.enableAudio);
-    audio.enableAudio(!APP.Model.enableAudio);
+    self.update();
   });
 
   setInterval(this.updateStats.bind(this), 1000);

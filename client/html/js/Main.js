@@ -490,6 +490,8 @@ APP.main = function() {
     localStorage.setItem('myNickname', APP.Model.myName);
   }
 
+  APP.Model.audioEnabled = (localStorage.getItem('audioEnabled') === "true");
+
   // Init the scene + all needed instances
   init();
 
