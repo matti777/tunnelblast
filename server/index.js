@@ -34,6 +34,10 @@ io.on('connection', function(socket){
       delete currentPlayers[game.host.socketId];
       delete currentPlayers[game.otherPlayer.socketId];
 
+      console.log('currentGames: ', Object.keys(currentGames).length);
+      console.log('currentPlayers: ', Object.keys(currentPlayers).length);
+      console.log('waitingForGame: ', Object.keys(waitingForGame).length);
+
       // clearInterval(game.updateTimer);
       var notifySocketId = (socket.id === game.host.socketId) ?
         game.otherPlayer.socketId : game.host.socketId;
@@ -101,8 +105,18 @@ io.on('connection', function(socket){
       delete waitingForGame[hostId];
 
       var game = {
-        host: {nickname: hostEntry.nickname, socketId: hostId, host: true},
-        otherPlayer: {nickname: msg.nickname, socketId: socket.id, host: false}
+        host: {
+          nickname: hostEntry.nickname,
+          socketId: hostId,
+          host: true,
+          version: hostEntry.version
+        },
+        otherPlayer: {
+          nickname: msg.nickname,
+          socketId: socket.id,
+          host: false,
+          version: msg.version
+        }
       };
       currentGames[game.host.socketId] = game;
       currentGames[game.otherPlayer.socketId] = game;
@@ -121,7 +135,7 @@ io.on('connection', function(socket){
       console.log('New game starting');
     } else {
       // Otherwise just add a new looking for a game entry for this player
-      var entry = {nickname: msg.nickname};
+      var entry = {nickname: msg.nickname, version: msg.version};
       waitingForGame[socket.id] = entry;
       callback({status: 'waiting'});
       console.log('Added new waiting for game entry', entry);

@@ -7,6 +7,7 @@ var LatencyMeasurementInterval = 3000;
 APP.Ui = function(networking) {
   var self = this;
 
+  this.audioToggleButton = $('#audio-toggle-button');
   this.mainMenu = $('#main-menu');
   this.findingGameMenu = $('#looking-for-game-menu');
   this.findingGameMenu.hide();
@@ -198,6 +199,16 @@ APP.Ui = function(networking) {
   this.latencySamples = [];
 
   this.update();
+
+  this.audioToggleButton.bind('click', function() {
+    console.log('Clicked on audio toggle button');
+
+    self.audioToggleButton.toggleClass('nosound', APP.Model.enableAudio);
+
+    //TODO why is APP.Model.enableAudio undefined here?
+    console.log('APP.Model.enableAudio when calling', APP.Model.enableAudio);
+    audio.enableAudio(!APP.Model.enableAudio);
+  });
 
   setInterval(this.updateStats.bind(this), 1000);
 };

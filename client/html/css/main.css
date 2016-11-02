@@ -64,6 +64,20 @@ canvas {
     color: white;
 }
 
+#audio-toggle-button {
+    position: absolute;
+    bottom: 3vh;
+    right: 3vh;
+    width: 5vh;
+    height: 5vh;
+    background-size: cover;
+    background-image: url("../images/audio_on.png");
+}
+
+#audio-toggle-button .nosound {
+    background-image: url("../images/audio_off.png");
+}
+
 #large-text-container {
     pointer-events: none;
     position: absolute;

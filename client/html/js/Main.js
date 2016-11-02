@@ -20,7 +20,7 @@ APP.Difficulty = {
 };
 var InitialBallSpeed = 1.2; // Speed of the ball at start of each round
 
-APP.Model = {score: {me: 0, opponent: 0}};
+APP.Model = {score: {me: 0, opponent: 0}, audioEnabled: false};
 
 // Constants
 var PaddleDistance = 1.7; // From the camera
@@ -32,7 +32,7 @@ var MinBallLightIntensity = 0.3;
 // 'Globals'
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
 var particleSystem, ballPointLight, particleClock;
-var ui, input, physics, networking;
+var ui, input, physics, networking, audio;
 var myPaddleStartLocation, opponentPaddleStartLocation;
 var previousFrameTime;
 
@@ -102,6 +102,9 @@ function init() {
 
   // Attach input handler(s)
   input = new APP.Input(renderer, camera, myPaddle);
+
+  // Create audio handler
+  audio = new APP.Audio();
 
   // Add event listeners
   window.addEventListener('resize', onWindowResize, false);

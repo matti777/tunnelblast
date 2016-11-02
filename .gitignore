@@ -110,3 +110,6 @@ buck-out/
 \.buckd/
 android/app/libs
 android/keystores/debug.keystore
+
+offline_resources
+
