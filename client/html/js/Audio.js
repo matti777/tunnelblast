@@ -13,15 +13,18 @@ var APP = APP || {};
 APP.Audio = function() {
   var self = this;
 
-   // Sound filenames
-  var MusicFilename = 'audio/music.wav';
-  var BallHitFilename = 'audio/ball_hit.wav';
+  /**
+   * Plays the "ball hit something" sound once.
+   */
+  this.playBallHitSound = function() {
+    this.playBuffer(APP.Audio.BallHit);
+  };
 
   /**
-   * Plays a pre-loaded audio buffer.
+   * Creates and plays an audio source from a pre-loaded buffer.
    *
    * @param name
-   * @param loop
+   * @param loop whether to loop the sound or not
    * @param volume value in range [0, 1]
    * @returns the created audio source
    */
@@ -36,7 +39,9 @@ APP.Audio = function() {
     source.buffer = buffer;
 
     if (volume !== undefined) {
+      assert((volume >= 0) && (volume <= 1.0), 'Invalid volume value: ' + volume);
       var volumeNode = self.context.createGain();
+      volumeNode.gain.value = volume;
       source.connect(volumeNode);
       volumeNode.connect(this.context.destination);
     } else {
@@ -57,6 +62,12 @@ APP.Audio = function() {
    * success param (true/false)
    */
   this.loadBuffer = function(name, completionCb) {
+    var complete = function(success) {
+      if (completionCb) {
+        completionCb(success);
+      }
+    };
+
     var request = new XMLHttpRequest();
     request.open("GET", name, true);
     request.responseType = "arraybuffer";
@@ -67,17 +78,17 @@ APP.Audio = function() {
       self.context.decodeAudioData(request.response,
         function(buffer) {
           self.audioBuffers[name] = buffer;
-          completionCb(true);
+          complete(true);
         },
         function(error) {
           console.log('Failed to decode audio file', error);
-          completionCb(false);
+          complete(false);
         });
     };
 
     request.onerror = function(error) {
       console.log('Failed to load sound file', name, error);
-      completionCb(false);
+      complete(false);
     };
 
     request.send();
@@ -90,20 +101,16 @@ APP.Audio = function() {
    * @param enable
    */
   this.enableAudio = function(enable) {
-    console.log('enableAudio', enable);
+    console.log('enableAudio()', enable);
 
     APP.Model.audioEnabled = enable;
 
     localStorage.setItem('audioEnabled', enable);
 
     if (enable === true) {
-      console.log('resuming audio..');
       this.context.resume();
-     // this.musicSource.start();
     } else {
-      console.log('suspending audio..');
       this.context.suspend();
-      //this.musicSource.stop();
     }
   };
 
@@ -112,21 +119,28 @@ APP.Audio = function() {
    */
   this.init = function() {
     this.context = new (window.AudioContext || window.webkitAudioContext)();
+
     this.audioBuffers = {};
 
     console.log('Audio enabled at startup?', APP.Model.audioEnabled);
     this.enableAudio(APP.Model.audioEnabled);
 
-    this.loadBuffer(MusicFilename, function(success) {
+    this.loadBuffer(APP.Audio.Music, function(success) {
       if (success) {
-        console.log('Playing music..');
-        self.musicSource = self.playBuffer(MusicFilename, true, 0.5);
+        console.log('Playing background music..');
+        self.playBuffer(APP.Audio.Music, true, 0.5);
       }
     });
 
+    this.loadBuffer(APP.Audio.BallHit);
   };
 
   this.init();
 };
 
 APP.Audio.constructor = APP.Audio;
+
+// Sound filenames
+APP.Audio.Music = 'audio/music.wav';
+APP.Audio.BallHit = 'audio/ball_hit.wav';
+

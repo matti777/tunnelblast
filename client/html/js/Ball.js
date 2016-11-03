@@ -9,6 +9,10 @@ APP.Ball = function() {
     // Match the position of the physics body on the visual mesh
     this.position.copy(this.physicsBody.position);
 
+    //TODO Make the ball tracjectory curved based on the angular velocity
+    //TODO make sure the speed (len of velocity) remains the same!
+    //this.physicsBody.velocity.x += this.physicsBody.angularVelocity.x / 10;
+
     // Match the orientation of the physics body via quaternion
     this.rotation.setFromQuaternion(this.physicsBody.quaternion);
   };
@@ -26,7 +30,7 @@ APP.Ball = function() {
     this.physicsBody = new CANNON.Body({
       mass: 1, // kg
       material: new CANNON.Material({
-        friction: 1,
+        friction: 10,
         restitution: 0.9 // Bounces with no damping
       }),
       position: this.getWorldPosition(),

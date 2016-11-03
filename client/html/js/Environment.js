@@ -18,7 +18,7 @@ APP.Environment = function() {
     this.physicsBody = new CANNON.Body({
       mass: 0, // mass == 0 makes the body static
       material: new CANNON.Material({
-        friction: 1,
+        friction: 10,
         restitution: 0.9
       }),
     });
@@ -35,8 +35,8 @@ APP.Environment = function() {
       new CANNON.Vec3(this.Width / 2, 0, 0));
 
     //TODO remove this when done testing, this is the back wall which we dont need
-    addPlane(this.physicsBody, new CANNON.Vec3(0, 1, 0), 0,
-      new CANNON.Vec3(0, 0, -this.Length / 2));
+    // addPlane(this.physicsBody, new CANNON.Vec3(0, 1, 0), 0,
+    //   new CANNON.Vec3(0, 0, -this.Length / 2));
   };
 
   // Create a material for the given texture

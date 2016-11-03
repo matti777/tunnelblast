@@ -12,7 +12,7 @@ APP.Difficulty = {
   },
   Hard: {
     ballspeed: 2.5,
-    opponentPaddleSpeed: 0.3
+    opponentPaddleSpeed: 0.5
   },
   Multiplayer: {
     ballspeed: 0.5 //2
@@ -28,6 +28,24 @@ var PhysicsGravity = 0.0; // m/s^2 (-9.81 to simulate real-world)
 var EndScore = 5;
 var MaxBallSpeedMultiplier = 1.75;
 var MinBallLightIntensity = 0.3;
+
+// Particle system settings
+var ParticleSystemOptions = {
+  position: new THREE.Vector3(),
+  positionRandomness: 0.26,
+  velocity: new THREE.Vector3(),
+  velocityRandomness: 0.2,
+  color: 0xCCAAFF,
+  colorRandomness: 0.2,
+  turbulence: 0,
+  lifetime: 2,
+  size: 5,
+  sizeRandomness: 1
+};
+
+var ParticleSpawnRate = 15000; // Number of particles spawned per second
+var ParticleMinBallSpeedMultiplier = 1.3;
+var ParticleMaxBallSpeedMultiplier = 1.75;
 
 // 'Globals'
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
@@ -395,23 +413,6 @@ function checkForScoring() {
     updateScore(true);
   }
 }
-
-var ParticleSystemOptions = {
-  position: new THREE.Vector3(),
-  positionRandomness: 0.26,
-  velocity: new THREE.Vector3(),
-  velocityRandomness: 0.2,
-  color: 0xCCAAFF,
-  colorRandomness: 0.2,
-  turbulence: 0,
-  lifetime: 2,
-  size: 5,
-  sizeRandomness: 1
-};
-
-var ParticleSpawnRate = 15000; // Number of particles spawned per second
-var ParticleMinBallSpeedMultiplier = 1.3;
-var ParticleMaxBallSpeedMultiplier = 1.75;
 
 function updateParticleSystem() {
   var particlesForFrame = ParticleSpawnRate * particleClock.getDelta();

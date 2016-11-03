@@ -11,7 +11,7 @@ var NegativeZAxis = new CANNON.Vec3(0, 0, -1);
 var SpeedBoostMin = 2; // Min speed to give ballspeed boost
 var SpeedBoostModifier = 0.15;
 
-APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment, networking) {
+APP.Physics = function(gravity) {
   /**
    * Checks that the ball's velocity vector differs no more than
    * BallMaxZAngle from the given vector (Z- / Z+ axes), and if it does,
@@ -146,6 +146,9 @@ APP.Physics = function(gravity, ball, myPaddle, opponentPaddle, environment, net
       console.log('Invalid contact; ball not present!');
       return;
     }
+
+    // The ball hit something; play a sound.
+    audio.playBallHitSound();
 
     if ((body.id == myPaddle.physicsBody.id) ||
       (body.id === opponentPaddle.physicsBody.id)) {
