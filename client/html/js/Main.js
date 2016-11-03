@@ -7,7 +7,7 @@ APP.GameMode = {
 
 APP.Difficulty = {
   Easy: {
-    ballspeed: 1.6,
+    ballspeed: 0.4,//1.6,
     opponentPaddleSpeed: 0.2
   },
   Hard: {
@@ -200,6 +200,8 @@ function serverUpdateReceived(data) {
       return;
     }
 
+    audio.playScoredSound();
+
     APP.Model.score.me = data.score.newOtherPlayerScore;
     APP.Model.score.opponent = data.score.newHostScore;
     updateScore(data.score.otherPlayerScored);
@@ -360,6 +362,8 @@ function updateScore(iScored) {
   delete opponentPaddle.movementTarget;
 
   if (isSinglePlayer() || isMultiPlayerHost()) {
+    audio.playScoredSound();
+
     // Check if the game was won
     var youWon, opponentWon;
 

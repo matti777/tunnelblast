@@ -21,6 +21,13 @@ APP.Audio = function() {
   };
 
   /**
+   * Plays the 'someone scored' sound once.
+   */
+  this.playScoredSound = function() {
+    this.playBuffer(APP.Audio.Scored);
+  };
+
+  /**
    * Creates and plays an audio source from a pre-loaded buffer.
    *
    * @param name
@@ -133,6 +140,7 @@ APP.Audio = function() {
     });
 
     this.loadBuffer(APP.Audio.BallHit);
+    this.loadBuffer(APP.Audio.Scored);
   };
 
   this.init();
@@ -143,4 +151,5 @@ APP.Audio.constructor = APP.Audio;
 // Sound filenames
 APP.Audio.Music = 'audio/music.wav';
 APP.Audio.BallHit = 'audio/ball_hit.wav';
+APP.Audio.Scored = 'audio/applause.wav';
 

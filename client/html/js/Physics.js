@@ -58,6 +58,8 @@ APP.Physics = function(gravity) {
       var v = myPaddle.physicsBody.velocity;
       var impulse = v.scale(0.1);
       ball.physicsBody.applyImpulse(impulse, ballWorldR);
+      // console.log('velocity, angular, ang.magnitude', v,
+      //   ball.physicsBody.angularVelocity, ball.physicsBody.angularVelocity.length());
 
       // Adjust ball bounce angle slightly by the contact point
       ballv.x += ((localR.x / pw2) * BallBounceAngleModifier);

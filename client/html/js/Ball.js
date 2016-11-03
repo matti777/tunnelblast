@@ -13,6 +13,9 @@ APP.Ball = function() {
     //TODO make sure the speed (len of velocity) remains the same!
     //this.physicsBody.velocity.x += this.physicsBody.angularVelocity.x / 10;
 
+    //TODO rotate ball velocity around ball.physicsBody.angularVelocity vector,
+    // by ball.physicsBody.angularVelocity.length() radians / second.
+
     // Match the orientation of the physics body via quaternion
     this.rotation.setFromQuaternion(this.physicsBody.quaternion);
   };
