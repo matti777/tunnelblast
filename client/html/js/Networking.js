@@ -90,10 +90,11 @@ APP.Networking = function(callback) {
     self.paddleUpdate = {position, velocity};
   };
 
-  this.updateBallState = function(position, velocity, angularVelocity) {
+  this.updateBallState = function(position, velocity, speedMultiplier,
+                                  angularVelocity) {
     assert(position && velocity && angularVelocity);
 
-    self.ballUpdate = {position, velocity, angularVelocity};
+    self.ballUpdate = {position, velocity, speedMultiplier, angularVelocity};
 
     // Send ball updates immediately to minimize twitching
     self.sendUpdate();
@@ -115,6 +116,7 @@ APP.Networking = function(callback) {
     }
 
     if (self.ballUpdate) {
+      // console.log('Sending ball update: ', self.ballUpdate);
       msg.ball = self.ballUpdate;
       delete self.ballUpdate;
     }
@@ -152,7 +154,7 @@ APP.Networking = function(callback) {
   this.quitGame = function() {
     this.socket.emit('quit-game', {}, function(msg) {
       console.log('quit-game response callback: ', msg);
-      callback(self.message.quitGame);
+      callback(self.messages.quitGame);
 
       // Stop sending updates to server
       if (this.sendUpdateTimer) {

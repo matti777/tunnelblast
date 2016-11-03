@@ -33,7 +33,7 @@ APP.Ball = function() {
     this.physicsBody = new CANNON.Body({
       mass: 1, // kg
       material: new CANNON.Material({
-        friction: 10,
+        friction: 1,
         restitution: 0.9 // Bounces with no damping
       }),
       position: this.getWorldPosition(),

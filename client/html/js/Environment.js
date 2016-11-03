@@ -18,7 +18,7 @@ APP.Environment = function() {
     this.physicsBody = new CANNON.Body({
       mass: 0, // mass == 0 makes the body static
       material: new CANNON.Material({
-        friction: 10,
+        friction: 1,
         restitution: 0.9
       }),
     });
@@ -96,7 +96,7 @@ APP.Environment = function() {
     var material2 = createMaterial(texture2, normalMap2);
 
     var faceMaterials = [
-      material1, material1, material2, material2, material2,
+      material1, material1, material2, material2, material2, material2,
       material1, material1
     ];
     var meshMaterial = new THREE.MeshFaceMaterial(faceMaterials);

@@ -28,6 +28,7 @@ var PhysicsGravity = 0.0; // m/s^2 (-9.81 to simulate real-world)
 var EndScore = 5;
 var MaxBallSpeedMultiplier = 1.75;
 var MinBallLightIntensity = 0.3;
+var Vector3Origin = new THREE.Vector3(0, 0, 0);
 
 // Particle system settings
 var ParticleSystemOptions = {
@@ -77,8 +78,8 @@ function init() {
   // Our camera; place at the back of the environment
   var aspect = window.innerWidth / window.innerHeight;
   camera = new THREE.PerspectiveCamera(70, aspect, 0.2, environment.Length);
-  var cameraZ = (environment.Length / 2) - 0.5;
-  camera.translateZ(cameraZ);
+  camera.z = (environment.Length / 2) - 0.5;
+  camera.translateZ(camera.z);
   scene.add(camera);
 
   // Add a point light to where our camera is
@@ -87,13 +88,14 @@ function init() {
 
   // Add my paddle and position it somewhat in front of the camera
   myPaddle = new APP.Paddle(APP.Paddle.Type.Mine, environment);
-  myPaddleStartLocation = new CANNON.Vec3(0, 0, cameraZ - PaddleDistance);
+  myPaddle.z = camera.z - PaddleDistance;
+  myPaddleStartLocation = new CANNON.Vec3(0, 0, myPaddle.z);
   myPaddle.moveTo(myPaddleStartLocation, environment);
   scene.add(myPaddle);
 
   // Add opponent's paddle to the other side of the environment
   opponentPaddle = new APP.Paddle(APP.Paddle.Type.Opponent, environment);
-  opponentPaddleStartLocation = new CANNON.Vec3(0, 0, -myPaddle.position.z);
+  opponentPaddleStartLocation = new CANNON.Vec3(0, 0, -myPaddle.z);
   opponentPaddle.moveTo(opponentPaddleStartLocation, environment);
   scene.add(opponentPaddle);
 
@@ -109,14 +111,13 @@ function init() {
   scene.add(particleSystem);
 
   // Initialize physics
-  physics = new APP.Physics(PhysicsGravity, ball, myPaddle,
-    opponentPaddle, environment, networking);
+  physics = new APP.Physics(PhysicsGravity);
 
   // Create our renderer..
   renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
-  $('#renderer').append(renderer.domElement)
+  $('#renderer').append(renderer.domElement);
 
   // Attach input handler(s)
   input = new APP.Input(renderer, camera, myPaddle);
@@ -173,25 +174,21 @@ function multiplayerGameStarting(gameData) {
 }
 
 function serverUpdateReceived(data) {
-  var mirror = function(vector) {
-    return {x: -vector.x, y: vector.y, z: -vector.z};
-  };
-
   // Update the opponent's paddle position if present
   if (data.paddle) {
-    console.log('Got opponent paddle update: ', data.paddle);
-    opponentPaddle.moveTo(mirror(data.paddle.position));
-    opponentPaddle.physicsBody.velocity.copy(mirror(data.paddle.velocity));
+    // console.log('Got opponent paddle update: ', data.paddle);
+    opponentPaddle.moveTo(data.paddle.position);
+    opponentPaddle.physicsBody.velocity.copy(data.paddle.velocity);
     opponentPaddle.lastUpdateTime = moment().utc().valueOf();
   }
 
   if (data.ball) {
-    console.log('Got ball update: ', data.ball);
-    var mirroredPos = mirror(data.ball.position);
-    ball.position.copy(mirroredPos);
-    ball.physicsBody.position.copy(mirroredPos);
-    ball.physicsBody.velocity.copy(mirror(data.ball.velocity));
-    ball.physicsBody.angularVelocity.copy(mirror(data.ball.angularVelocity));
+    // console.log('Got ball update: ', data.ball);
+    ball.speedMultiplier = data.ball.speedMultiplier;
+    ball.position.copy(data.ball.position);
+    ball.physicsBody.position.copy(data.ball.position);
+    ball.physicsBody.velocity.copy(data.ball.velocity);
+    ball.physicsBody.angularVelocity.copy(data.ball.angularVelocity);
   }
 
   if (data.score) {
@@ -277,13 +274,37 @@ function activateBall(activate) {
   }
 }
 
+/**
+ * Orientates the playground; in case playing as the non-host in a multiplayer
+ * game, switches to the "other side" of the environment.
+ */
+function orientate() {
+  var f = (isSinglePlayer() || isMultiPlayerHost()) ? 1 : -1;
+
+  console.log('orientate() f', f);
+
+  // Camera
+  camera.position.z = camera.z * f;
+  camera.lookAt(Vector3Origin);
+
+  // My paddle (same side as camera)
+  myPaddleStartLocation = new CANNON.Vec3(0, 0, myPaddle.z * f);
+
+  // Opponent's paddle (opposite side)
+  opponentPaddleStartLocation = new CANNON.Vec3(0, 0, myPaddle.z * -f);
+}
+
 function startGame(mode, difficulty) {
   assert((mode === APP.GameMode.SinglePlayer) ||
     (mode === APP.GameMode.MultiPlayer), 'Invalid mode value');
 
   APP.Model.gameMode = mode;
+
+  orientate();
+
   myPaddle.moveTo(myPaddleStartLocation, environment);
   opponentPaddle.moveTo(opponentPaddleStartLocation, environment);
+
   delete opponentPaddle.movementTarget;
 
   if (mode === APP.GameMode.SinglePlayer) {
@@ -314,7 +335,8 @@ function startGame(mode, difficulty) {
 
       // Also send ball velocity update to the other player
       networking.updateBallState(ball.physicsBody.position,
-        ball.physicsBody.velocity, ball.physicsBody.angularVelocity);
+        ball.physicsBody.velocity, ball.speedMultiplier,
+        ball.physicsBody.angularVelocity);
     }
   }
 
@@ -395,7 +417,8 @@ function updateScore(iScored) {
       if (isMultiPlayerHost()) {
         // Also send ball velocity update to the other player
         networking.updateBallState(ball.physicsBody.position,
-          ball.physicsBody.velocity, ball.physicsBody.angularVelocity);
+          ball.physicsBody.velocity, ball.speedMultiplier,
+          ball.physicsBody.angularVelocity);
       }
     }, 1200);
   }
@@ -408,12 +431,14 @@ function checkForScoring() {
   // Check if ball has passed behind my paddle ie. opponent scores
   if (ball.position.z > (myPaddle.position.z + ball.Radius)) {
     APP.Model.score.opponent++;
+    console.log('I decide: opponent scored.')
     updateScore(false);
   }
 
   // Check if ball has passed behind the opponent paddle ie. I have scored.
   if (ball.position.z < (opponentPaddle.position.z - ball.Radius)) {
     APP.Model.score.me++;
+    console.log('I decide: I scored.')
     updateScore(true);
   }
 }

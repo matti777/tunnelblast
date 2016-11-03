@@ -68,6 +68,8 @@ APP.Physics = function(gravity) {
       var speed = v.length();
       if (speed >= SpeedBoostMin) {
         ball.speedMultiplier += (speed - SpeedBoostMin) * SpeedBoostModifier;
+      } else {
+        ball.speedMultiplier = 1;
       }
 
       // Make sure the ball's velocity is not at too steep angle
@@ -120,7 +122,8 @@ APP.Physics = function(gravity) {
         // Host sends all updates except contact with opponent paddle (both handle
         // their own paddle contacts). Non-host sends contacts with own paddle only.
         console.log('physics: sending ball update after contact');
-        networking.updateBallState(ballp, ballv, ball.physicsBody.angularVelocity);
+        networking.updateBallState(ballp, ballv, ball.speedMultiplier,
+          ball.physicsBody.angularVelocity);
       }
     }
   };
