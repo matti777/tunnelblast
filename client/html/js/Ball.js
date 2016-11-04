@@ -28,12 +28,9 @@ APP.Ball = function() {
       var magnitude = adjustAxis.normalize() * BallCurveFactor;
       var adjustAngle = magnitude * timeDelta;
 
-      // console.log('adjustAngle, adjustAxis', adjustAngle, adjustAxis);
-
       var quaternion = new CANNON.Quaternion();
       quaternion.setFromAxisAngle(adjustAxis, adjustAngle);
       quaternion.vmult(v, v);
-      // console.log('after vmult', this.physicsBody.velocity, v);
     }
     this.prevVelocityAdjustTime = now;
   };

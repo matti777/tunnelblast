@@ -170,12 +170,12 @@ div.button.disabled {
 
 div.menu-button {
     border-radius: 20px;
-    margin: 20px 0px 40px 0px;
+    margin: 20px 0px 20px 0px;
     padding: 20px 20px 20px 20px;
     font-size: 3vw;
 }
 
-div.button:active {
+div.button:active, div.button.active {
     background-color: rgba(255, 255, 255, .7);
     color: rgba(0, 0, 0, .7)
 }

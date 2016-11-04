@@ -314,7 +314,6 @@ function startGame(mode, difficulty) {
 
     APP.Model.difficulty = difficulty;
     APP.Model.opponentName = 'AI';
-    console.log('Selected difficulty:', APP.Model.difficulty);
 
     activateBall(true);
     ball.physicsBody.velocity.set(0, 0, InitialBallSpeed);

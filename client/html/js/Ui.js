@@ -70,14 +70,16 @@ APP.Ui = function(networking) {
     if (show) {
       self.mainMenu.hide(400);
       self.findingGameMenu.show(400);
+      this.bindButtons();
 
-      $('#cancel-game').bind('click', function () {
+      $('#cancel-game').on('click', function () {
         networking.quitGame();
         self.showFindingGameMenu(false);
       });
     } else {
       self.mainMenu.show(400);
       self.findingGameMenu.hide(400);
+      this.bindButtons();
       $('#cancel-game').unbind();
     }
   };
@@ -157,17 +159,17 @@ APP.Ui = function(networking) {
     var menu = $('#menu-container');
 
     if (show) {
-      $('#single-player-easy').bind('click', function() {
+      $('#single-player-easy').on('click', function() {
         doStartSinglePlayerGame(APP.Difficulty.Easy);
       });
-      $('#single-player-hard').bind('click', function() {
+      $('#single-player-hard').on('click', function() {
         doStartSinglePlayerGame(APP.Difficulty.Hard);
       });
-      $('#multi-player').bind('click', function() {
+      $('#multi-player').on('click', function () {
         networking.findGame();
         self.showFindingGameMenu(true);
       });
-      $('#nickname-input-button').bind('click', function() {
+      $('#nickname-input-button').on('click', function() {
         var nickname = $('#nickname-input').val().trim();
         if (nickname.length > 0) {
           APP.Model.myName = nickname;
@@ -195,12 +197,36 @@ APP.Ui = function(networking) {
     });
   };
 
+  /**
+   * Binds event handlers to div.buttons.
+   */
+  this.bindButtons = function() {
+    $('div.button').on('touchstart', function() {
+      console.log('Touch started on button!');
+      $(this).addClass('active');
+    });
+    $('div.button').on('touchend', function(e) {
+      console.log('Touch ended on button!', e);
+      $(this).removeClass('active');
+      //TODO check the touch is within the button!
+      $(this).trigger('click');
+    });
+  };
+
+  /**
+   Initializes the UI hooks.
+   */
+  this.init = function() {
+    this.bindButtons();
+    setInterval(this.updateStats.bind(this), 1000);
+  };
+
   this.fpsSamples = [];
   this.latencySamples = [];
 
   this.update();
 
-  this.audioToggleButton.bind('click', function() {
+  this.audioToggleButton.on('click touch', function() {
     console.log('Clicked on audio toggle button');
 
     audio.enableAudio(!APP.Model.audioEnabled);
@@ -208,6 +234,6 @@ APP.Ui = function(networking) {
     self.update();
   });
 
-  setInterval(this.updateStats.bind(this), 1000);
+  this.init();
 };
 APP.Ui.constructor = APP.Ui;
