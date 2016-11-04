@@ -1,23 +1,48 @@
 // Define namespace
 var APP = APP || {};
 
+// How much the ball curves through air due to its angular velocity.
+var BallCurveFactor = 0.08;
+
 APP.Ball = function() {
   this.Radius = 0.2;
 
-  // Called after a physics tick. Updates the ball's position and orientation
+  /**
+   * Called after a physics tick. Updates the ball's position and orientation.
+   */
   this.onWorldPostStep = function() {
     // Match the position of the physics body on the visual mesh
     this.position.copy(this.physicsBody.position);
 
-    //TODO Make the ball tracjectory curved based on the angular velocity
-    //TODO make sure the speed (len of velocity) remains the same!
-    //this.physicsBody.velocity.x += this.physicsBody.angularVelocity.x / 10;
-
-    //TODO rotate ball velocity around ball.physicsBody.angularVelocity vector,
-    // by ball.physicsBody.angularVelocity.length() radians / second.
-
     // Match the orientation of the physics body via quaternion
     this.rotation.setFromQuaternion(this.physicsBody.quaternion);
+
+    var now = moment().utc().valueOf();
+    if (this.prevVelocityAdjustTime) {
+      // Adjust the velocity (thus, ball trajectory) by the angular velocity
+      // ('spin'), to make it curve through the air.
+      var timeDelta = (now - this.prevVelocityAdjustTime) / 1000; // seconds
+
+      var v = this.physicsBody.velocity;
+      var adjustAxis = this.physicsBody.angularVelocity.clone();
+      var magnitude = adjustAxis.normalize() * BallCurveFactor;
+      var adjustAngle = magnitude * timeDelta;
+
+      // console.log('adjustAngle, adjustAxis', adjustAngle, adjustAxis);
+
+      var quaternion = new CANNON.Quaternion();
+      quaternion.setFromAxisAngle(adjustAxis, adjustAngle);
+      quaternion.vmult(v, v);
+      // console.log('after vmult', this.physicsBody.velocity, v);
+    }
+    this.prevVelocityAdjustTime = now;
+  };
+
+  /**
+   * Called when ever the ball velocity has changed (ie. it has hit something)
+   */
+  this.velocityChanged = function() {
+    delete this.prevVelocityAdjustTime;
   };
 
   this.reset = function() {
@@ -26,6 +51,7 @@ APP.Ball = function() {
     this.physicsBody.position.setZero();
     this.physicsBody.velocity.setZero();
     this.physicsBody.angularVelocity.setZero();
+    delete this.prevVelocityAdjustTime;
   };
 
   // Initialize Cannon physics

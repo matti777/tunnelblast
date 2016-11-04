@@ -7,7 +7,7 @@ APP.GameMode = {
 
 APP.Difficulty = {
   Easy: {
-    ballspeed: 0.4,//1.6,
+    ballspeed: 1.0,//1.6,
     opponentPaddleSpeed: 0.2
   },
   Hard: {
@@ -26,6 +26,7 @@ APP.Model = {score: {me: 0, opponent: 0}, audioEnabled: false};
 var PaddleDistance = 1.7; // From the camera
 var PhysicsGravity = 0.0; // m/s^2 (-9.81 to simulate real-world)
 var EndScore = 5;
+var CountdownTimer = 0;
 var MaxBallSpeedMultiplier = 1.75;
 var MinBallLightIntensity = 0.3;
 var Vector3Origin = new THREE.Vector3(0, 0, 0);
@@ -189,6 +190,7 @@ function serverUpdateReceived(data) {
     ball.physicsBody.position.copy(data.ball.position);
     ball.physicsBody.velocity.copy(data.ball.velocity);
     ball.physicsBody.angularVelocity.copy(data.ball.angularVelocity);
+    ball.velocityChanged();
   }
 
   if (data.score) {
@@ -280,8 +282,6 @@ function activateBall(activate) {
  */
 function orientate() {
   var f = (isSinglePlayer() || isMultiPlayerHost()) ? 1 : -1;
-
-  console.log('orientate() f', f);
 
   // Camera
   camera.position.z = camera.z * f;

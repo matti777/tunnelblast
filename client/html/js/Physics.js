@@ -5,7 +5,8 @@ var APP = APP || {};
 var BallBounceAngleModifier = 0.5; // How much hitting side of paddle tilts bounce angle
 var PhysicsFixedTimeStep = 1.0 / 60.0; // Seconds. Do not change.
 var PhysicsMaxSubSteps = 3; // Do not change.
-var BallMaxZAngle = (40 / 180) * Math.PI; // Radians
+var BallMaxZAngle = (30 / 180) * Math.PI; // Radians
+var BallMaxSpinMagnitude = 8;
 var PositiveZAxis = new CANNON.Vec3(0, 0, 1);
 var NegativeZAxis = new CANNON.Vec3(0, 0, -1);
 var SpeedBoostMin = 2; // Min speed to give ballspeed boost
@@ -61,6 +62,14 @@ APP.Physics = function(gravity) {
       // console.log('velocity, angular, ang.magnitude', v,
       //   ball.physicsBody.angularVelocity, ball.physicsBody.angularVelocity.length());
 
+      // Limit the amount of spin to a maximum value
+      var spinMagnitude = ball.physicsBody.angularVelocity.length();
+      if (spinMagnitude > BallMaxSpinMagnitude) {
+        ball.physicsBody.angularVelocity.scale((BallMaxSpinMagnitude / spinMagnitude),
+          ball.physicsBody.angularVelocity);
+      }
+      // console.log('spin mag.', ball.physicsBody.angularVelocity.length());
+
       // Adjust ball bounce angle slightly by the contact point
       ballv.x += ((localR.x / pw2) * BallBounceAngleModifier);
       ballv.y += ((localR.y / ph2) * BallBounceAngleModifier);
@@ -90,7 +99,7 @@ APP.Physics = function(gravity) {
 
     if (body.id !== myPaddle.physicsBody.id) {
       // Hit something else than my paddle; dampen the angular velocity (spin)
-      ballBody.angularVelocity.scale(0.80, ballBody.angularVelocity);
+      ballBody.angularVelocity.scale(0.7, ballBody.angularVelocity);
     }
 
     // If hit anything else then opponent's paddle while in sinpleplayer mode,
@@ -121,7 +130,6 @@ APP.Physics = function(gravity) {
         (APP.Model.multiplayer.youAreHost && (body.id !== opponentPaddle.physicsBody.id))) {
         // Host sends all updates except contact with opponent paddle (both handle
         // their own paddle contacts). Non-host sends contacts with own paddle only.
-        console.log('physics: sending ball update after contact');
         networking.updateBallState(ballp, ballv, ball.speedMultiplier,
           ball.physicsBody.angularVelocity);
       }
@@ -155,6 +163,8 @@ APP.Physics = function(gravity) {
     // The ball hit something; play a sound.
     audio.playBallHitSound();
 
+    ball.velocityChanged();
+
     if ((body.id == myPaddle.physicsBody.id) ||
       (body.id === opponentPaddle.physicsBody.id)) {
       // Calculate contact point in body's local coordinate space
@@ -178,7 +188,7 @@ APP.Physics = function(gravity) {
 
     // Call these from here to ensure it is called after executing the step
     ball.onWorldPostStep();
-    if (opponentPaddle.movementTarget) {
+    if (isSinglePlayer() && opponentPaddle.movementTarget) {
       opponentPaddle.moveTowardsTarget();
     };
 
@@ -202,6 +212,18 @@ APP.Physics = function(gravity) {
     this.opponentIntersectPlane = new THREE.Plane(PositiveZAxis,
       -opponentPaddle.position.z);
   };
+
+  //TODO remove
+  // var a = new CANNON.Vec3(10, 0, 0);
+  // console.log('norm', a.normalize());
+  // var axis = new CANNON.Vec3(0, 1, 0);
+  // var angle = 90 * (Math.PI / 180);
+  // console.log('a, angle', a, angle);
+  //
+  // var quaternion = new CANNON.Quaternion();
+  // quaternion.setFromAxisAngle(axis, angle);
+  // var b = quaternion.vmult(a);
+  // console.log('b', b);
 
   this.init(gravity, ball, myPaddle, opponentPaddle, environment);
 }

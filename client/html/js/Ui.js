@@ -86,7 +86,7 @@ APP.Ui = function(networking) {
     self.showMenu(false);
 
     setTimeout(function() {
-      showCountdownTimer(1, function () {
+      showCountdownTimer(CountdownTimer, function () {
         callback();
       });
     }, 1000);
