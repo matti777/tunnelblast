@@ -66,7 +66,7 @@ function init() {
   networking = new APP.Networking(networkCalllback);
 
   // Create UI handler
-  ui = new APP.Ui(networking);
+  ui = new APP.Ui();
 
   // Create the surrounding environment (tunnel)
   environment = new APP.Environment();

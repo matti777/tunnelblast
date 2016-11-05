@@ -10,6 +10,8 @@ See:
 // Define namespace
 var APP = APP || {};
 
+var BackgroundMusicVolume = 0.5;
+
 APP.Audio = function() {
   var self = this;
 
@@ -17,6 +19,15 @@ APP.Audio = function() {
    * Plays the "ball hit something" sound once.
    */
   this.playBallHitSound = function() {
+    var now = moment().utc().valueOf();
+    if (this.lastBallHitSound) {
+      // Block the sound being played too often
+      if ((now - this.lastBallHitSound) <= 100) {
+        return;
+      }
+    }
+    this.lastBallHitSound = now;
+
     this.playBuffer(APP.Audio.BallHit);
   };
 
@@ -36,6 +47,11 @@ APP.Audio = function() {
    * @returns the created audio source
    */
   this.playBuffer = function(name, loop, volume) {
+    if (!APP.Model.audioEnabled) {
+      // Audio not enabled, do not play sounds
+      return;
+    }
+
     var buffer = this.audioBuffers[name];
     if (!buffer) {
       console.log('** ERROR buffer not loaded: ', name);
@@ -44,6 +60,13 @@ APP.Audio = function() {
 
     var source = this.context.createBufferSource();
     source.buffer = buffer;
+
+    source.onended = function() {
+      // Remove the source from list of active sources
+      self.activeSources = self.activeSources.filter(function(x) {
+        return (x !== source);
+      });
+    };
 
     if (volume !== undefined) {
       assert((volume >= 0) && (volume <= 1.0), 'Invalid volume value: ' + volume);
@@ -57,6 +80,11 @@ APP.Audio = function() {
 
     source.loop = loop || false;
     source[source.start ? 'start' : 'noteOn'](0);
+
+    source.audioName = name;
+    source.audioId = moment().utc().valueOf();
+
+    this.activeSources.push(source);
 
     return source;
   };
@@ -80,8 +108,6 @@ APP.Audio = function() {
     request.responseType = "arraybuffer";
 
     request.onload = function() {
-      console.log('Audio file loaded; decoding it..');
-
       self.context.decodeAudioData(request.response,
         function(buffer) {
           self.audioBuffers[name] = buffer;
@@ -108,16 +134,22 @@ APP.Audio = function() {
    * @param enable
    */
   this.enableAudio = function(enable) {
-    console.log('enableAudio()', enable);
+    if (APP.Model.audioEnabled === enable) {
+      return;
+    }
 
     APP.Model.audioEnabled = enable;
 
     localStorage.setItem('audioEnabled', enable);
 
     if (enable === true) {
-      this.context.resume();
+      self.playBuffer(APP.Audio.Music, true, BackgroundMusicVolume);
     } else {
-      this.context.suspend();
+      // Stop + remove all active audio sources
+      for (var i = 0; i < self.activeSources.length; i++) {
+        self.activeSources[i].stop();
+      }
+      self.activeSources = [];
     }
   };
 
@@ -127,15 +159,17 @@ APP.Audio = function() {
   this.init = function() {
     this.context = new (window.AudioContext || window.webkitAudioContext)();
 
+    // List of currently playing AudioBufferSourceNode:s
+    this.activeSources = [];
+
+    // List of loaded AudioBuffer:s
     this.audioBuffers = {};
 
-    console.log('Audio enabled at startup?', APP.Model.audioEnabled);
     this.enableAudio(APP.Model.audioEnabled);
 
     this.loadBuffer(APP.Audio.Music, function(success) {
-      if (success) {
-        console.log('Playing background music..');
-        self.playBuffer(APP.Audio.Music, true, 0.5);
+      if (success && APP.Model.audioEnabled) {
+        self.playBuffer(APP.Audio.Music, true, BackgroundMusicVolume);
       }
     });
 

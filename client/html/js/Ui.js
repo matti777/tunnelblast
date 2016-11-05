@@ -4,13 +4,16 @@ var APP = APP || {};
 var FpsMeasurementInterval = 1000;
 var LatencyMeasurementInterval = 3000;
 
-APP.Ui = function(networking) {
+APP.Ui = function() {
   var self = this;
 
-  this.audioToggleButton = $('#audio-toggle-button');
-  this.mainMenu = $('#main-menu');
-  this.findingGameMenu = $('#looking-for-game-menu');
-  this.findingGameMenu.hide();
+  var fs = $('#full-screen');
+  var menu = $('#menu-container');
+  var audioToggleButton = $('#audio-toggle-button');
+  var mainMenu = $('#main-menu');
+  var findingGameMenu = $('#looking-for-game-menu');
+  var buttons = $('div.button');
+  var cancelGameButton = $('#cancel-game');
 
   this.displayFadingLargeText = function(text, fadeOutDelay, useLarger) {
     // Delete existing large-text node(s)
@@ -45,14 +48,14 @@ APP.Ui = function(networking) {
       scores.hide();
     }
 
-    if (!APP.Model.connectedToServer && (this.mainMenu.css('display') === 'none')) {
+    if (!APP.Model.connectedToServer && (mainMenu.css('display') === 'none')) {
       // Server disconnected while in Looking for game menu; restore main menu.
       this.showFindingGameMenu(false);
     }
 
     $('#multi-player').toggleClass('disabled', !APP.Model.connectedToServer);
     $('#nickname-input').val(APP.Model.myName);
-    self.audioToggleButton.toggleClass('nosound', !APP.Model.audioEnabled);
+    audioToggleButton.toggleClass('nosound', !APP.Model.audioEnabled);
   };
 
   function showCountdownTimer(timerValue, completionCb) {
@@ -68,19 +71,16 @@ APP.Ui = function(networking) {
 
   this.showFindingGameMenu = function(show) {
     if (show) {
-      self.mainMenu.hide(400);
-      self.findingGameMenu.show(400);
-      this.bindButtons();
+      mainMenu.hide(400);
+      findingGameMenu.show(400);
 
-      $('#cancel-game').on('click', function () {
+      cancelGameButton.on('click', function () {
         networking.quitGame();
-        self.showFindingGameMenu(false);
+        showFindingGameMenu(false);
       });
     } else {
-      self.mainMenu.show(400);
-      self.findingGameMenu.hide(400);
-      this.bindButtons();
-      $('#cancel-game').unbind();
+      mainMenu.show(400);
+      findingGameMenu.hide(400);
     }
   };
 
@@ -155,9 +155,6 @@ APP.Ui = function(networking) {
       });
     };
 
-    var fs = $('#full-screen');
-    var menu = $('#menu-container');
-
     if (show) {
       $('#single-player-easy').on('click', function() {
         doStartSinglePlayerGame(APP.Difficulty.Easy);
@@ -188,36 +185,25 @@ APP.Ui = function(networking) {
       menu.addClass('animate-reverse');
       menu.css('pointer-events', 'none');
     }
-
-    menu.bind('oanimationend animationend webkitAnimationEnd', function() {
-      if (!show) {
-        $('.button').unbind();
-      }
-      $('#menu-container').unbind();
-    });
-  };
-
-  /**
-   * Binds event handlers to div.buttons.
-   */
-  this.bindButtons = function() {
-    $('div.button').on('touchstart', function() {
-      console.log('Touch started on button!');
-      $(this).addClass('active');
-    });
-    $('div.button').on('touchend', function(e) {
-      console.log('Touch ended on button!', e);
-      $(this).removeClass('active');
-      //TODO check the touch is within the button!
-      $(this).trigger('click');
-    });
   };
 
   /**
    Initializes the UI hooks.
    */
   this.init = function() {
-    this.bindButtons();
+    buttons.on('touchstart', function() {
+      console.log('Touch started on button!');
+      $(this).addClass('active');
+    });
+    buttons.on('touchend', function(e) {
+      console.log('Touch ended on button!', e);
+      $(this).removeClass('active');
+      //TODO check the touch is within the button!
+      $(this).trigger('click');
+    });
+
+    findingGameMenu.hide();
+
     setInterval(this.updateStats.bind(this), 1000);
   };
 
@@ -226,7 +212,7 @@ APP.Ui = function(networking) {
 
   this.update();
 
-  this.audioToggleButton.on('click touch', function() {
+  audioToggleButton.on('click', function() {
     console.log('Clicked on audio toggle button');
 
     audio.enableAudio(!APP.Model.audioEnabled);
