@@ -43,8 +43,8 @@ export default class MainView extends Component {
         bounces={false}
         scrollEnabled={false}
         automaticallyAdjustContentInsets={false}
-      //  source={{uri: 'html/index.html'}}
-        source={{uri: 'http://192.168.1.67:8000'}}
+        source={{uri: 'html/index.html'}}
+      //  source={{uri: 'http://192.168.1.67:8000'}}
       />
     );
   }

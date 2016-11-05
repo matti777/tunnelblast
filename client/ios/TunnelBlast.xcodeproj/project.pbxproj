@@ -622,6 +622,7 @@
 					"-ObjC",
 					"-lc++",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = org.tunnel.lBlast;
 				PRODUCT_NAME = TunnelBlast;
 			};
 			name = Debug;
@@ -642,6 +643,7 @@
 					"-ObjC",
 					"-lc++",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = org.tunnel.lBlast;
 				PRODUCT_NAME = TunnelBlast;
 			};
 			name = Release;

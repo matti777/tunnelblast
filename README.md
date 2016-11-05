@@ -4,11 +4,22 @@ This is a PoC project for trying out the limits of making a mobile game with Jav
 
 ## Table of Contents
 
-TODO 
+1. [Concept](#concept)
+1. [Overall Architecture](#overall-architecture)
+	* [Screenshots](#screenshots)
+	* [User Interface](#user-interface)
+	* [3D Graphics](#3d-graphics)
+	* TODO
+	
+## Concept 
 
-## Concept and Overall Architecture
+The game is essentially a 3D version of [Pong](https://en.wikipedia.org/wiki/Pong). Yes, there are a million such games in existence already.
 
-TODO
+It is a proof-of-concept attempt at building a responsive and well performing mobile game using only cross platform web technologies.
+
+## Overall Architecture
+
+[Javascript ES5](https://en.wikipedia.org/wiki/ECMAScript#5th_Edition) was chosen as the development language. The main reason for this was that the core libraries ThreeJS and CANNON.js were developed in ES5. Also the mobile browsers do not (at the time of writing) natively support ES6, nor did I want to bloat the project with gulp/babel etc due to reason no.1.
 
 **[⬆ back to top](#table-of-contents)**
 
@@ -65,6 +76,38 @@ Audio is played through [WebAudio](https://developer.mozilla.org/en-US/docs/Web/
 TODO 
 
 **[⬆ back to top](#table-of-contents)**
+
+### Mobile clients
+
+To provide a proper mobile user experience, native clients for iOS and Android can be built, wrapped in [React Native](https://facebook.github.io/react-native/). 
+
+**[⬆ back to top](#table-of-contents)**
+
+## Client Development
+
+You can develop the client on any browser; simply run a local web server (eg. python -m SimpleHTTPServer) and open ```client/html/index.html``` in the browser. Use your favourite text editor and follow best practices & conventions for Javascript.
+
+### Building the mobile clients
+
+You need to have React Native installed to build the clients. See [React Native: Getting Started](https://facebook.github.io/react-native/docs/getting-started.html).
+
+#### iOS
+
+Open ```client/ios/TunnelBlast.xcodeproj``` in Xcode and Run it.
+
+#### Android
+
+Import ```client/android/``` as a project into [Android Studio](https://developer.android.com/studio/) and Run it.
+
+**[⬆ back to top](#table-of-contents)**
+
+## Server Development
+
+You need to have [NodeJS](https://nodejs.org/en/) installed to run the server.
+
+To run the server for development, go into ```server/``` and run ```node .```.  Use your favourite text editor and follow best practices & conventions for Javascript.
+
+To run the server in development, set up [PM2](https://github.com/Unitech/pm2) or similar to manager your server application.
 
 ## Contact
 
