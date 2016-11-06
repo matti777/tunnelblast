@@ -58,17 +58,26 @@ APP.Input = function(renderer, camera, myPaddle) {
     draggingPaddle = false;
   };
 
+  /**
+   * Calls event.preventDefault() unless we are handling our text input..
+   *
+   * @param event
+   */
+  this.processEvent = function(event) {
+    var elementId = (event.target || event.srcElement).id;
+    if (elementId !== 'nickname-input') { // TODO This hacky or what! do we have another way?
+      event.preventDefault();
+    }
+  };
+
   this.onMouseMove = function(event) {
     event.preventDefault();
 
     this.pointerMoved({x: event.clientX, y: event.clientY});
-};
+  };
 
   this.onMouseDown = function(event) {
-    var elementId = (event.target || event.srcElement).id;
-    if (elementId !== 'nickname-input') { // This hacky or what!
-      event.preventDefault();
-    }
+    this.processEvent(event);
 
     this.pointerDown({x: event.clientX, y: event.clientY});
   };
@@ -86,7 +95,7 @@ APP.Input = function(renderer, camera, myPaddle) {
   }
 
   this.onTouchStart = function(event) {
-    event.preventDefault();
+    this.processEvent(event);
 
     if (this.touchId === null) {
       var touch = event.originalEvent.touches[0];
@@ -107,7 +116,7 @@ APP.Input = function(renderer, camera, myPaddle) {
   };
 
   this.onTouchEnd = function(event) {
-    event.preventDefault();
+    this.processEvent(event);
 
     if (this.touchId !== null) {
       var touch = touchForId(event.originalEvent.touches, this.touchId);

@@ -14,6 +14,7 @@ APP.Ui = function() {
   var findingGameMenu = $('#looking-for-game-menu');
   var buttons = $('div.button');
   var cancelGameButton = $('#cancel-game');
+  var nicknameInput = $('#nickname-input');
 
   this.displayFadingLargeText = function(text, fadeOutDelay, useLarger) {
     // Delete existing large-text node(s)
@@ -54,7 +55,10 @@ APP.Ui = function() {
     }
 
     $('#multi-player').toggleClass('disabled', !APP.Model.connectedToServer);
-    $('#nickname-input').val(APP.Model.myName);
+    //TODO instead of this, check if we are editing the field and not change the value then.
+    if (nicknameInput.val().trim().length === 0) {
+      nicknameInput.val(APP.Model.myName);
+    }
     audioToggleButton.toggleClass('nosound', !APP.Model.audioEnabled);
   };
 
@@ -167,7 +171,7 @@ APP.Ui = function() {
         self.showFindingGameMenu(true);
       });
       $('#nickname-input-button').on('click', function() {
-        var nickname = $('#nickname-input').val().trim();
+        var nickname = nicknameInput.val().trim();
         if (nickname.length > 0) {
           APP.Model.myName = nickname;
           localStorage.setItem('myNickname', APP.Model.myName);
