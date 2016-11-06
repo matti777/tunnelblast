@@ -144,6 +144,7 @@ canvas {
     overflow: auto;
     display: block;
     text-align: center;
+    padding: 5px 0 5px 0;
 }
 
 #nickname-input-button:active {

@@ -45,7 +45,8 @@ var ParticleSystemOptions = {
   sizeRandomness: 1
 };
 
-var ParticleSpawnRate = 15000; // Number of particles spawned per second
+var ParticleMaxCount = 250000; // Max number of total particles
+var ParticleSpawnRate = 1500; // Number of particles spawned per second
 var ParticleMinBallSpeedMultiplier = 1.3;
 var ParticleMaxBallSpeedMultiplier = 1.75;
 
@@ -108,7 +109,7 @@ function init() {
   ball.add(ballPointLight);
 
   // Attach a particle system
-  particleSystem = new THREE.GPUParticleSystem({maxParticles: 250000});
+  particleSystem = new THREE.GPUParticleSystem({maxParticles: ParticleMaxCount});
   scene.add(particleSystem);
 
   // Initialize physics
@@ -519,7 +520,7 @@ APP.main = function() {
     localStorage.setItem('myNickname', APP.Model.myName);
   }
 
-  APP.Model.audioEnabled = (localStorage.getItem('audioEnabled') === "true");
+  APP.Model.audioEnabled = (localStorage.getItem('audioEnabled') !== 'false');
 
   // Init the scene + all needed instances
   init();
