@@ -8,7 +8,10 @@ import {
   Text
 } from 'react-native';
 
-//const window = Dimensions.get('window');
+const window = Dimensions.get('window');
+const titleFontFamily = (Platform.OS === 'ios') ? 'HelveticaNeue-CondensedBold' : 'Roboto';
+const loadingFontFamily = (Platform.OS === 'ios') ? 'HelveticaNeue-Light' : 'Roboto';
+const indexHtmlPath = (Platform.OS === 'ios') ? 'html/index.html' : 'file:///android_asset/html/index.html';
 
 export default class MainView extends Component {
   static propTypes = {
@@ -74,7 +77,7 @@ export default class MainView extends Component {
           bounces={false}
           scrollEnabled={false}
           automaticallyAdjustContentInsets={false}
-          source={{uri: 'html/index.html'}}
+          source={{uri: indexHtmlPath}}
         />
         {loadingView}
       </View>
@@ -82,19 +85,13 @@ export default class MainView extends Component {
   }
 }
 
-const window = Dimensions.get('window');
-const titleFontFamily = (Platform.OS === 'ios') ? 'HelveticaNeue-CondensedBold' : 'Roboto';
-const loadingFontFamily = (Platform.OS === 'ios') ? 'HelveticaNeue-Light' : 'Roboto';
-
-console.log('fonts', titleFontFamily, loadingFontFamily);
-
 const styles = StyleSheet.create({
   view: {
     flex: 1,
     height: window.height,
   },
   webView: {
-    backgroundColor: 'red'
+    backgroundColor: 'black'
   },
   loadingView: {
     flex: 1,
