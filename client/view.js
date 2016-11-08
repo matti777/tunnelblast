@@ -71,6 +71,7 @@ export default class MainView extends Component {
         <WebView
           style={styles.webView}
           mediaPlaybackRequiresUserAction={false}
+          domStorageEnabled={true}
           onError={this.onWebViewError.bind(this)}
           onLoadStart={this.onWebViewLoadStarted.bind(this)}
           onLoad={this.onWebViewLoaded.bind(this)}
