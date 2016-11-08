@@ -115,11 +115,17 @@ function init() {
   // Initialize physics
   physics = new APP.Physics(PhysicsGravity);
 
-  // Create our renderer..
-  renderer = new THREE.WebGLRenderer();
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  $('#renderer').append(renderer.domElement);
+  try {
+    // Create our renderer..
+    renderer = new THREE.WebGLRenderer();
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    $('#renderer').append(renderer.domElement);
+  } catch (error) {
+   console.log('Error creating WebGLRenderer', error);
+    //TODO show error in UI!
+    return;
+  }
 
   // Attach input handler(s)
   input = new APP.Input(renderer, camera, myPaddle);

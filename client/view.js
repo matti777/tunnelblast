@@ -8,6 +8,8 @@ import {
   Text
 } from 'react-native';
 
+import WebViewBridge from 'react-native-webview-bridge';
+
 const window = Dimensions.get('window');
 const titleFontFamily = (Platform.OS === 'ios') ? 'HelveticaNeue-CondensedBold' : 'Roboto';
 const loadingFontFamily = (Platform.OS === 'ios') ? 'HelveticaNeue-Light' : 'Roboto';
@@ -68,10 +70,12 @@ export default class MainView extends Component {
 
     return (
       <View style={styles.view}>
-        <WebView
+        <WebViewBridge
           style={styles.webView}
           mediaPlaybackRequiresUserAction={false}
           domStorageEnabled={true}
+          allowFileAccessFromFileURLs={true}
+          allowUniversalAccessFromFileURLs={true}
           onError={this.onWebViewError.bind(this)}
           onLoadStart={this.onWebViewLoadStarted.bind(this)}
           onLoad={this.onWebViewLoaded.bind(this)}
