@@ -64,7 +64,7 @@ APP.Ball = function() {
     });
   };
 
-    // Initialize threejs visuals
+  // Initialize threejs visuals
   this.initVisuals = function() {
     var geometry = new THREE.SphereGeometry(this.Radius, 22, 22);
 

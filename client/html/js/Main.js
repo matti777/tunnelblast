@@ -22,7 +22,7 @@ var InitialBallSpeed = 1.2; // Speed of the ball at start of each round
 
 APP.Model = {score: {me: 0, opponent: 0}, audioEnabled: false};
 
-// Constants
+// Misc constants
 var PaddleDistance = 1.7; // From the camera
 var PhysicsGravity = 0.0; // m/s^2 (-9.81 to simulate real-world)
 var EndScore = 5;
@@ -30,6 +30,13 @@ var CountdownTimer = 0;
 var MaxBallSpeedMultiplier = 1.75;
 var MinBallLightIntensity = 0.3;
 var Vector3Origin = new THREE.Vector3(0, 0, 0);
+
+// Particle system constants
+var ParticleLifeTime = 2; // Particle lifetime in seconds
+var ParticleSpawnRate = 3000; // Number of particles spawned per second
+var ParticleMaxCount = ParticleSpawnRate * ParticleLifeTime; // Max number of total particles
+var ParticleMinBallSpeedMultiplier = 1.3;
+var ParticleMaxBallSpeedMultiplier = 1.75;
 
 // Particle system settings
 var ParticleSystemOptions = {
@@ -40,15 +47,10 @@ var ParticleSystemOptions = {
   color: 0xCCAAFF,
   colorRandomness: 0.2,
   turbulence: 0,
-  lifetime: 2,
+  lifetime: ParticleLifeTime,
   size: 5,
   sizeRandomness: 1
 };
-
-var ParticleMaxCount = 250000; // Max number of total particles
-var ParticleSpawnRate = 1500; // Number of particles spawned per second
-var ParticleMinBallSpeedMultiplier = 1.3;
-var ParticleMaxBallSpeedMultiplier = 1.75;
 
 // 'Globals'
 var camera, scene, renderer, environment, myPaddle, opponentPaddle, ball;
