@@ -28,6 +28,22 @@ if (!Function.prototype.bind) {
   };
 }
 
+function isMobile() {
+  if (navigator.platform === "MacIntel") {
+    return false;
+  } else {
+    return (/Mobi/.test(navigator.userAgent));
+  }
+}
+
+function isIOS() {
+  if (navigator.platform === "MacIntel") {
+    return false;
+  } else {
+    return (/iPad|iPhone|iPod/.test(navigator.userAgent));
+  }
+}
+
 //TODO better name - see GLSL functions
 /**
  * Given value scalar range end points a and b (so that a < b) and a value 'value',

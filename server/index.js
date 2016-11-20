@@ -1,9 +1,13 @@
-//var app = require('express')();
-var io = require('socket.io')(3000);
+var HTTP_PORT = 3000;
+var SOCKETIO_PORT = 3001;
+
+var io = require('socket.io')(SOCKETIO_PORT);
 var moment = require('moment');
+var express = require('express');
+var path = require('path');
 
 // Interval for sending updates to the cliets (in milliseconds)
-var UpdateInterval = 500;
+var UpdateInterval = 42;
 
 // Players currently waiting for a game; stored by their socked.id.
 var waitingForGame = {};
@@ -15,6 +19,12 @@ var currentGames = {};
 // Current players in all of the games, stored by their socket.id. The
 // same Player objects are pointed to by the Game object in question.
 var currentPlayers = {};
+
+// Express.js server for serving the files to browsers
+var server = express();
+server.use(express.static(path.join(__dirname, '/../client/html/')));
+server.listen(HTTP_PORT);
+console.log('Serving files over HTTP in port: ' + HTTP_PORT);
 
 io.on('connection', function(socket){
   console.log('New connection from socket ID: ', socket.id);
@@ -187,4 +197,4 @@ io.on('connection', function(socket){
   });
 });
 
-console.log('Running on port 3000..');
+console.log('Socket.IO running on port: ' + SOCKETIO_PORT);

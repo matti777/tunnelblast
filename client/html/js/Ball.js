@@ -1,9 +1,6 @@
 // Define namespace
 var APP = APP || {};
 
-// How much the ball curves through air due to its angular velocity.
-var BallCurveFactor = 0.08;
-
 APP.Ball = function() {
   this.Radius = 0.2;
 
@@ -25,7 +22,7 @@ APP.Ball = function() {
 
       var v = this.physicsBody.velocity;
       var adjustAxis = this.physicsBody.angularVelocity.clone();
-      var magnitude = adjustAxis.normalize() * BallCurveFactor;
+      var magnitude = adjustAxis.normalize() * APP.Model.difficulty.ballCurveFactor;
       var adjustAngle = magnitude * timeDelta;
 
       var quaternion = new CANNON.Quaternion();

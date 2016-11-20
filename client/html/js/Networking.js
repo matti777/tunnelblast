@@ -1,11 +1,11 @@
 // Define namespace
 var APP = APP || {};
 
-var PingInterval = 5000; // Interval for sending client-ping, in ms
-var UpdateInterval = 500; // Interval for sending client-update, in ms
+var PingInterval = 2000; // Interval for sending client-ping, in ms
+var UpdateInterval = 42; // Interval for sending client-update, in ms
 
 // Server address
-var GameServerAddress = 'http://localhost:3000';
+var GameServerAddress = 'http://localhost:3001';
 
 // Game's networking version; integer, always update when breaking compatibility.
 var GameNetworkingVersion = 1;

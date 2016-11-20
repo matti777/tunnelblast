@@ -70,6 +70,7 @@ Note that the client-side prediction/interpolation code is very naive and may di
 
 The game server is build on top of [NodeJS](https://nodejs.org/en/) for its IO scalability characteristics and [SocketIO](http://socket.io/) support.
 
+The server also spins up an Express.js server to serve the static files for browser clients.
 
 ### Audio
 
@@ -85,7 +86,7 @@ To provide a proper mobile user experience, native clients for iOS and Android c
 
 ## Client Development
 
-You can develop the client on any browser; simply run a local web server (eg. python -m SimpleHTTPServer) and open ```client/html/index.html``` in the browser. Use your favourite text editor and follow best practices & conventions for Javascript.
+You can develop the client on any browser; simply run ```cd server; node .``` and open ```http://localhost:3000``` in the browser. Use your favourite text editor and follow best practices & conventions for Javascript.
 
 ### Building the mobile clients
 

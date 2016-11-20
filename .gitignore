@@ -29,6 +29,9 @@ xcuserdata/
 *.moved-aside
 *.xcuserstate
 
+# android keys
+release.keystore
+
 ## Obj-C/Swift specific
 *.hmap
 *.ipa

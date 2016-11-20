@@ -5,17 +5,30 @@ APP.GameMode = {
   SinglePlayer: 1, MultiPlayer: 2
 };
 
+/*
+ Difficulty object explained:
+
+ ballSpeed: ball's base speed through the air.
+
+ opponentPaddleSpeed: at what speed the AI can move its paddle.
+
+ ballCurveFactor: How much the ball curves through air due to its angular
+ velocity. Incresase this value to make the ball curve more.
+*/
 APP.Difficulty = {
   Easy: {
-    ballspeed: 1.0,//1.6,
-    opponentPaddleSpeed: 0.2
+    ballspeed: 1.7,
+    opponentPaddleSpeed: 0.4,
+    ballCurveFactor: 0.08
   },
   Hard: {
     ballspeed: 2.5,
-    opponentPaddleSpeed: 0.5
+    opponentPaddleSpeed: 0.6,
+    ballCurveFactor: 0.13
   },
   Multiplayer: {
-    ballspeed: 0.5 //2
+    ballspeed: 2.5,
+    ballCurveFactor: 0.13
   }
 };
 var InitialBallSpeed = 1.2; // Speed of the ball at start of each round
@@ -26,14 +39,17 @@ APP.Model = {score: {me: 0, opponent: 0}, audioEnabled: false};
 var PaddleDistance = 1.7; // From the camera
 var PhysicsGravity = 0.0; // m/s^2 (-9.81 to simulate real-world)
 var EndScore = 5;
-var CountdownTimer = 0;
+var CountdownTimer = 3;
 var MaxBallSpeedMultiplier = 1.75;
 var MinBallLightIntensity = 0.3;
 var Vector3Origin = new THREE.Vector3(0, 0, 0);
 
 // Particle system constants
 var ParticleLifeTime = 2; // Particle lifetime in seconds
-var ParticleSpawnRate = 3000; // Number of particles spawned per second
+var ParticleSpawnRate = 15000; // Number of particles spawned per second
+if (isIOS()) {
+  ParticleSpawnRate = 2000; // iOS seems to choke on the particles while android does not
+}
 var ParticleMaxCount = ParticleSpawnRate * ParticleLifeTime; // Max number of total particles
 var ParticleMinBallSpeedMultiplier = 1.3;
 var ParticleMaxBallSpeedMultiplier = 1.75;
