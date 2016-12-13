@@ -5,7 +5,8 @@ var PingInterval = 2000; // Interval for sending client-ping, in ms
 var UpdateInterval = 42; // Interval for sending client-update, in ms
 
 // Server address
-var GameServerAddress = 'http://localhost:3001';
+// var GameServerAddress = 'http://localhost:3001';
+var GameServerAddress = 'http://104.199.110.201:3001';
 
 // Game's networking version; integer, always update when breaking compatibility.
 var GameNetworkingVersion = 1;
