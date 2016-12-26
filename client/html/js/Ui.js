@@ -167,6 +167,7 @@ APP.Ui = function() {
         doStartSinglePlayerGame(APP.Difficulty.Hard);
       });
       $('#multi-player').on('click', function () {
+        console.log('Clicked multiplayer button - calling findGame()');
         networking.findGame();
         self.showFindingGameMenu(true);
       });

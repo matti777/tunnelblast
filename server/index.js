@@ -7,7 +7,7 @@ var express = require('express');
 var path = require('path');
 
 // Interval for sending updates to the cliets (in milliseconds)
-var UpdateInterval = 42;
+// var UpdateInterval = 10;
 
 // Players currently waiting for a game; stored by their socked.id.
 var waitingForGame = {};
@@ -29,6 +29,13 @@ console.log('Serving files over HTTP in port: ' + HTTP_PORT);
 io.on('connection', function(socket){
   console.log('New connection from socket ID: ', socket.id);
 
+  function printStatus(state) {
+    console.log('STATUS at "' + state + '": waitingForGame: ' +
+      Object.keys(waitingForGame).length + ', currentGames: ' +
+      Object.keys(currentGames).length + ', currentPlayers: ' +
+      Object.keys(currentPlayers).length);
+  }
+
   function handleDisconnect(socket) {
     if (waitingForGame[socket.id]) {
       console.log('Disconnecting waiting for game entry',
@@ -44,11 +51,6 @@ io.on('connection', function(socket){
       delete currentPlayers[game.host.socketId];
       delete currentPlayers[game.otherPlayer.socketId];
 
-      console.log('currentGames: ', Object.keys(currentGames).length);
-      console.log('currentPlayers: ', Object.keys(currentPlayers).length);
-      console.log('waitingForGame: ', Object.keys(waitingForGame).length);
-
-      // clearInterval(game.updateTimer);
       var notifySocketId = (socket.id === game.host.socketId) ?
         game.otherPlayer.socketId : game.host.socketId;
       var notifySocket = io.sockets.connected[notifySocketId];
@@ -58,6 +60,8 @@ io.on('connection', function(socket){
         console.log('Disconnect: could not find notifySocket!');
       }
     }
+
+    printStatus('handleDisconnect');
   };
 
   var sendUpdate = function sendUpdate(game) {
@@ -68,7 +72,7 @@ io.on('connection', function(socket){
       game.otherPlayer.updatePending = true;
 
       otherSocket.emit('server-update', hostUpdate, function() {
-        console.log('server-update: other player client ACK.');
+        // console.log('server-update: other player client ACK.');
         game.otherPlayer.updatePending = false;
         delete game.host.stateUpdate;
       });
@@ -76,12 +80,12 @@ io.on('connection', function(socket){
 
     // If the other player has an update, send it to the host unless congested
     var otherUpdate = game.otherPlayer.stateUpdate;
-    if (otherUpdate && !game.otherPlayer.updatePending) {
+    if (otherUpdate && !game.host.updatePending) {
       var hostSocket = io.sockets.connected[game.host.socketId];
       game.host.updatePending = true;
 
       hostSocket.emit('server-update', otherUpdate, function() {
-        console.log('server-update: host player client ACK.');
+        // console.log('server-update: host player client ACK.');
         game.host.updatePending = false;
         delete game.otherPlayer.stateUpdate;
       });
@@ -99,9 +103,11 @@ io.on('connection', function(socket){
       return callback({error: 'Invalid message data'});
     }
 
-    if (waitingForGame[socket.id]) {
-      console.log('find-game: this player already looking for a game!', socket.id);
-      return callback({error: 'You are already looking for game'});
+    if (waitingForGame[socket.id] || currentGames[socket.id] ||
+      currentPlayers[socket.id]) {
+      console.log('Thats weird, player already looking for game or has a ' +
+        'game running?', socket.id);
+      handleDisconnect(socket.id);
     }
 
     console.log('Received find-game from: ', socket.id);
@@ -150,13 +156,12 @@ io.on('connection', function(socket){
       callback({status: 'waiting'});
       console.log('Added new waiting for game entry', entry);
     }
+
+    printStatus('find-game');
   });
 
   socket.on('client-update', function(msg, callback) {
-    // 'ack' the original message asap
-    callback();
-
-    console.log('Received client-update: ', msg);
+    // console.log('Received client-update: ', msg);
 
     // Find the corresponding Player object
     var player = currentPlayers[socket.id];
@@ -165,8 +170,7 @@ io.on('connection', function(socket){
       return;
     }
 
-    // Insert / update the pending state update; will be sent to the other
-    // player at the next possible moment in the update tick
+    // Insert / update the pending state update
     var stateUpdate = player.stateUpdate || {};
     stateUpdate.paddle = msg.paddle || stateUpdate.paddle;
     stateUpdate.ball = msg.ball || stateUpdate.ball;
@@ -183,6 +187,9 @@ io.on('connection', function(socket){
     }
 
     sendUpdate(game);
+
+    // ACK the original message
+    callback();
   });
 
   socket.on('quit-game', function(msg, callback) {

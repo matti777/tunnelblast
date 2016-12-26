@@ -31,6 +31,10 @@ It is a proof-of-concept attempt at building a responsive and well performing mo
 
 There is a single player mode as well as a multiplayer mode ie. possibility to play against another player. The single player opponent AI is very naive, simply trying to move its paddle in front of the incoming ball to block. In the multiplayer mode, one of the players is the "host" and makes all the decisions; there is no server-side logic or validation for this. It is, after all, a PoC.
 
+## Availability
+
+The game is available for testing on browser at [http://104.199.110.201:3000](http://104.199.110.201:3000).
+
 ## Overall Architecture
 
 [Javascript ES5](https://en.wikipedia.org/wiki/ECMAScript#5th_Edition) was chosen as the development language. The main reason for this was that the core libraries ThreeJS and CANNON.js were developed in ES5. Also the mobile browsers do not (at the time of writing) natively support ES6, nor did I want to bloat the project with gulp/babel etc due to reason no.1.
