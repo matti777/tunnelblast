@@ -153,31 +153,7 @@ APP.Ui = function() {
   };
 
   this.showMenu = function(show) {
-    var doStartSinglePlayerGame = function(difficulty) {
-      self.doStartGameAnimations(function() {
-        startGame(APP.GameMode.SinglePlayer, difficulty);
-      });
-    };
-
     if (show) {
-      $('#single-player-easy').on('click', function() {
-        doStartSinglePlayerGame(APP.Difficulty.Easy);
-      });
-      $('#single-player-hard').on('click', function() {
-        doStartSinglePlayerGame(APP.Difficulty.Hard);
-      });
-      $('#multi-player').on('click', function () {
-        console.log('Clicked multiplayer button - calling findGame()');
-        networking.findGame();
-        self.showFindingGameMenu(true);
-      });
-      $('#nickname-input-button').on('click', function() {
-        var nickname = nicknameInput.val().trim();
-        if (nickname.length > 0) {
-          APP.Model.myName = nickname;
-          localStorage.setItem('myNickname', APP.Model.myName);
-        }
-      });
       fs.removeClass('animate-reverse');
       fs.addClass('animate');
       menu.removeClass('animate-reverse');
@@ -205,6 +181,33 @@ APP.Ui = function() {
       $(this).removeClass('active');
       //TODO check the touch is within the button!
       $(this).trigger('click');
+    });
+
+    var doStartSinglePlayerGame = function(difficulty) {
+      self.doStartGameAnimations(function() {
+        startGame(APP.GameMode.SinglePlayer, difficulty);
+      });
+    };
+
+    $('#single-player-easy').on('click', function() {
+      console.log('Clicked on single player EASY');
+      doStartSinglePlayerGame(APP.Difficulty.Easy);
+    });
+    $('#single-player-hard').on('click', function() {
+      console.log('Clicked on single player HARD');
+      doStartSinglePlayerGame(APP.Difficulty.Hard);
+    });
+    $('#multi-player').on('click', function () {
+      console.log('Clicked multiplayer button - calling findGame()');
+      networking.findGame();
+      self.showFindingGameMenu(true);
+    });
+    $('#nickname-input-button').on('click', function() {
+      var nickname = nicknameInput.val().trim();
+      if (nickname.length > 0) {
+        APP.Model.myName = nickname;
+        localStorage.setItem('myNickname', APP.Model.myName);
+      }
     });
 
     findingGameMenu.hide();
