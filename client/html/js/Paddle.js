@@ -8,18 +8,36 @@ APP.Paddle = function(type, environment) {
   assert(type === APP.Paddle.Type.Mine || type === APP.Paddle.Type.Opponent);
   assert(environment);
 
-  this.Width = 1.2;
-  this.Height = this.Width * (683/1024);
+  var self = this;
+  
+  self.Width = 1.2;
+  self.Height = self.Width * (683/1024);
 
-  // Called when user moves the paddle
-  this.moveTo = function(newPosition) {
+  /** Velocity as received over a network update (opponent paddle) */
+  self.velocity = new CANNON.Vec3(0, 0, 0);
+
+  /**
+   * Call this when a game starts to reset some game-time paddle attributes.
+   */
+  self.reset = function() {
+    self.positionSamples = [];
+
+    delete self.lastTickTime;
+    delete self.lastUpdateTime;
+  };
+
+  /**
+   * Called when user moves the paddle
+   * @param newPosition
+   */
+  self.moveTo = function(newPosition) {
     assert(newPosition, 'Mandatory param missing');
 
     // Bound paddle movement by the walls
-    var pw2 = (this.Width / 2);
-    var ew2 = (this.environment.Width / 2);
-    var ph2 = (this.Height / 2);
-    var eh2 = (this.environment.Height / 2);
+    var pw2 = (self.Width / 2);
+    var ew2 = (self.environment.Width / 2);
+    var ph2 = (self.Height / 2);
+    var eh2 = (self.environment.Height / 2);
 
     // Left wall
     if ((newPosition.x - pw2) < -ew2) {
@@ -42,123 +60,209 @@ APP.Paddle = function(type, environment) {
     }
 
     // Update the object position
-    this.position.copy(newPosition);
+    self.position.copy(newPosition);
 
     // Also update the physics body position
-    this.physicsBody.position.copy(this.getWorldPosition());
+    self.physicsBody.position.copy(self.getWorldPosition());
   };
 
-  // Moves this (single player mode opponent's) paddle towards movementTarget
+  // Moves self (single player mode opponent's) paddle towards movementTarget
   // at OpponentPaddleSpeed speed, using the lastTickTime vs current time
   // for time measurement.
-  this.moveTowardsTarget = function() {
-    assert(this.movementTarget, 'Must be set!');
-    assert(this.lastTickTime, 'Must be set!');
+  self.moveTowardsTarget = function() {
+    assert(self.movementTarget, 'Must be set!');
+    assert(self.lastTickTime, 'Must be set!');
 
-    // Calculate the distance this paddle can travel this tick
-    var now = new Date().getTime();
-    var diff = (now - this.lastTickTime) / 1000;
+    // Calculate the distance self paddle can travel self tick
+    var now = moment().utc().valueOf();
+    var diff = (now - self.lastTickTime) / 1000;
     var distance = diff * APP.Model.difficulty.opponentPaddleSpeed;
 
     // Get vector from position to target
-    var v = new THREE.Vector3().subVectors(this.movementTarget, this.position);
+    var v = new THREE.Vector3().subVectors(self.movementTarget, self.position);
     if (v.length() < distance) {
       // We have arrived at the destination.
-      this.moveTo(this.movementTarget);
-      delete this.movementTarget;
+      self.moveTo(self.movementTarget);
+      delete self.movementTarget;
     } else {
       // Move towards the destination
-      var newPos = new THREE.Vector3().addVectors(this.position,
+      var newPos = new THREE.Vector3().addVectors(self.position,
         v.setLength(distance));
-      this.moveTo(newPos);
+      self.moveTo(newPos);
     }
 
-    this.lastTickTime = now;
+    self.lastTickTime = now;
   };
 
-  // Moves the opponent paddle (multiplayer mode) according to its current
-  // velocity and elapsed time since last update.
-  this.moveWithVelocity = function() {
-    if (!this.lastUpdateTime || this.physicsBody.velocity.almostZero()) {
+  /**
+   * Moves the opponent paddle (multiplayer mode) according to its current
+   * velocity and elapsed time since last update.
+   */
+  self.moveWithVelocity = function() {
+    if (!self.lastUpdateTime || self.velocity.almostZero()) {
+      // Not received any network updates yet or velocity is 0
       return;
     }
 
     var now = moment().utc().valueOf();
-    var diff = (now - this.lastUpdateTime) / 1000; // Time delta in seconds
-    assert(diff >= 0);
+    var diff = (now - self.lastUpdateTime) / 1000.0; // Time delta in seconds
+    assert(diff >= 0, 'Time difference must be positive');
 
-    // console.log('diff, velocity: ', diff, this.physicsBody.velocity.length());
-    var v = this.physicsBody.velocity.clone().scale(diff);
-    var newPos = this.physicsBody.position.vadd(v);
+    // console.log('diff, velocity: ', diff, self.physicsBody.velocity.length());
+    var v = self.velocity.clone().scale(diff);
+    var newPos = self.physicsBody.position.vadd(v);
 
-    this.moveTo(newPos);
-    this.lastUpdateTime = now;
+    self.moveTo(newPos);
+    self.lastUpdateTime = now;
   };
 
+  /**
+   * Returns the latest position sample. If there are no position samples,
+   * throws an assertion error.
+   *
+   * @returns {*|T} latest position sample
+   */
+  self.getLatestPosition = function() {
+    assert(self.positionSamples, 'Position sample array must exist');
+    assert(self.positionSamples.length > 0, 'Must have at least 1 sample');
+
+    return self.positionSamples[self.positionSamples.length - 1];
+  };
+
+  /**
+   * Appends the current position to the end of position samples with the
+   * current timestamp (```moment().utc().valueOf()```).
+   */
+  self.updatePositionSamples = function() {
+    self.positionSamples.push({
+      time: moment().utc().valueOf(),
+      x: self.position.x,
+      y: self.position.y
+    });
+  };
+
+  /* old:
   // Adds a position sample and recalculates current speed.
-  this.updateVelocity = function() {
+  self.updateVelocity = function() {
     var now = moment().utc().valueOf();
     var positionSample = {
       time: now,
-      x: this.position.x,
-      y: this.position.y
+      x: self.position.x,
+      y: self.position.y
     };
-    this.positionSamples.push(positionSample);
+    self.positionSamples.push(positionSample);
 
-    var MeasurementInterval = 150; // In milliseconds
+    var MeasurementInterval = 500; // In milliseconds
 
     // Remove any samples older than MeasurementInterval
     while (true) {
-      var diff = now - this.positionSamples[0].time;
+      var diff = now - self.positionSamples[0].time;
       if (diff > MeasurementInterval) {
-        this.positionSamples.shift();
+        self.positionSamples.shift();
       } else {
         break;
       }
     }
 
+    // Check if not enough samples
+    if (self.positionSamples.length <= 1) {
+      self.physicsBody.velocity.set(0, 0, 0);
+      return;
+    }
+
+    //TODO do not calculate this here; instead, calculate this on demand when
+    //TODO networking is about to send a paddle update.
+
     // Calculate paddle velocity from the first sample (which should be about
     // MeasureInterval ms in the past if the buffer has been filled already) to
     // the current position & moment.
-    var firstSample = this.positionSamples[0];
+    var firstSample = self.positionSamples[0];
     var seconds = (now - firstSample.time) / 1000;
 
-    var v = {x: (this.position.x - firstSample.x) / seconds,
-      y: (this.position.y - firstSample.y) / seconds};
+    var v = {x: (self.position.x - firstSample.x) / seconds,
+      y: (self.position.y - firstSample.y) / seconds};
 
     // Also set the velocity to the physics body
-    this.physicsBody.velocity.set(v.x, v.y, 0);
+    self.physicsBody.velocity.set(v.x, v.y, 0);
+  };
+  */
+
+  /**
+   * Calculates the velocity vector for the paddle having moved from the location
+   * nest 'fromTime' to the current (latest) position.
+   *
+   * @param fromTime Point in time to use as the starting point
+   */
+  self.getVelocitySince = function(fromTime) {
+    assert(self.positionSamples, 'Position sample array must exist');
+    assert(self.positionSamples.length > 0, 'Must have at least 1 sample');
+
+    if (!fromTime) {
+      return {x: 0, y: 0};
+    }
+
+    // Find the position sample closest to fromTime
+    var selectedSample = null;
+    var selectedIndex = null;
+
+    for (var i = 0; i < self.positionSamples.length; i++) {
+      var sample = self.positionSamples[i];
+      if (sample.time > fromTime) {
+        break;
+      }
+      selectedSample = sample;
+      selectedIndex = i;
+    }
+
+    if (selectedSample === null) {
+      console.log("Could not find sample older than fromTime - using oldest");
+      selectedSample = self.positionSamples[0];
+    }
+
+    if (selectedIndex !== null) {
+      // For efficient scanning of the array and to preserve RAM,
+      // remove older samples from the samples array
+      self.positionSamples = self.positionSamples.slice(selectedIndex);
+    }
+
+    // Calculate the paddle velocity from the selected sample close to
+    // fromTime to the current time / position.
+    var now = moment().utc().valueOf();
+    var seconds = (now - selectedSample.time) / 1000.0;
+
+    return {x: (self.position.x - selectedSample.x) / seconds,
+      y: (self.position.y - selectedSample.y) / seconds};
   };
 
-  // Sets the target location where this (single player mode opponent's) paddle
+  // Sets the target location where self (single player mode opponent's) paddle
   // should be moving. It will move according to OpponentPaddleSpeed speed
   // every time moveTowardsTarget() is called.
-  this.setMovementTarget = function(target) {
-    this.movementTarget = target;
-    this.lastTickTime = new Date().getTime();
+  self.setMovementTarget = function(target) {
+    self.movementTarget = target;
+    self.lastTickTime = moment().utc().valueOf();
   };
 
   // Initialize Cannon physics
-  this.initPhysics = function() {
-    this.physicsBody = new CANNON.Body({
+  self.initPhysics = function() {
+    self.physicsBody = new CANNON.Body({
       mass: 0, // // mass == 0 makes the body static (moved w/ user interaction)
       material: new CANNON.Material({
         friction: 0.0,
         restitution: 1.0 // Bounces with no damping
       }),
-      position: this.getWorldPosition(),
+      position: self.getWorldPosition(),
       shape: new CANNON.Box(new CANNON.Vec3(
-        this.Width / 2, this.Height / 2, 0.001))
+        self.Width / 2, self.Height / 2, 0.001))
     });
   };
 
   // Initialize threejs visuals
-  this.initVisuals = function() {
-    this.environment = environment;
+  self.initVisuals = function() {
+    self.environment = environment;
     var textureName = (type === APP.Paddle.Type.Mine) ?
       'textures/my-paddle.png' : 'textures/opponent-paddle.png';
 
-    var geometry = new THREE.PlaneGeometry(this.Width, this.Height);
+    var geometry = new THREE.PlaneGeometry(self.Width, self.Height);
     var textureMap = new THREE.TextureLoader().load(textureName);
     textureMap.minFilter = THREE.LinearFilter;
 
@@ -166,16 +270,15 @@ APP.Paddle = function(type, environment) {
       transparent: true,
       opacity: 0.4,
       side: THREE.DoubleSide,
-      map: textureMap,
+      map: textureMap
     });
 
-    THREE.Mesh.call(this, geometry, material);
+    THREE.Mesh.call(self, geometry, material);
   };
 
-  this.positionSamples = [];
-
-  this.initVisuals();
-  this.initPhysics();
+  self.reset();
+  self.initVisuals();
+  self.initPhysics();
 };
 
 APP.Paddle.Type = {

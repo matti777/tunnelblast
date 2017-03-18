@@ -99,7 +99,7 @@ APP.Environment = function() {
       material1, material1, material2, material2, material2, material2,
       material1, material1
     ];
-    var meshMaterial = new THREE.MeshFaceMaterial(faceMaterials);
+    var meshMaterial = new THREE.MultiMaterial(faceMaterials);
 
     THREE.Mesh.call(this, geometry, meshMaterial);
   };

@@ -192,6 +192,9 @@ function serverConnectionDisconnected(msg) {
 function multiplayerGameStarting(gameData) {
   console.log('multiplayer game starting; gameData', gameData);
 
+  // Make sure we have at least one position sample ready
+  myPaddle.updatePositionSamples();
+
   APP.Model.multiplayer = gameData;
 
   ui.doStartGameAnimations(function() {
@@ -200,13 +203,14 @@ function multiplayerGameStarting(gameData) {
 }
 
 function serverUpdateReceived(data) {
-  // Update the opponent's paddle position if present
-  if (data.paddle) {
-    // console.log('Got opponent paddle update: ', data.paddle);
-    opponentPaddle.moveTo(data.paddle.position);
-    opponentPaddle.physicsBody.velocity.copy(data.paddle.velocity);
-    opponentPaddle.lastUpdateTime = moment().utc().valueOf();
-  }
+  assert(data.paddle, 'Paddle update must be present');
+
+  // Update the opponent's paddle position & velocity
+  opponentPaddle.moveTo(data.paddle.position);
+  opponentPaddle.velocity.set(data.paddle.velocity.x,
+    data.paddle.velocity.y, 0);
+    // opponentPaddle.physicsBody.velocity.copy(data.paddle.velocity);
+  opponentPaddle.lastUpdateTime = moment().utc().valueOf();
 
   if (data.ball) {
     // console.log('Got ball update: ', data.ball);
@@ -342,6 +346,8 @@ function startGame(mode, difficulty) {
 
     activateBall(true);
     ball.physicsBody.velocity.set(0, 0, InitialBallSpeed);
+    myPaddle.reset();
+    opponentPaddle.reset();
     APP.Model.gameRunning = true;
   } else {
     assert(APP.Model.multiplayer, 'Multiplayer game data missing');
@@ -350,6 +356,8 @@ function startGame(mode, difficulty) {
     APP.Model.difficulty = APP.Difficulty.Multiplayer;
     APP.Model.opponentName = APP.Model.multiplayer.opponent.nickname;
     activateBall(true);
+    myPaddle.reset();
+    opponentPaddle.reset();
     APP.Model.gameRunning = true;
 
     // Multiplayer game starts immediately for the host; after the first
@@ -406,6 +414,11 @@ function updateScore(iScored) {
   myPaddle.moveTo(myPaddleStartLocation, environment);
   opponentPaddle.moveTo(opponentPaddleStartLocation, environment);
   delete opponentPaddle.movementTarget;
+
+  // Update the paddle state to the server
+  // networking.updatePaddleState();
+  // networking.updatePaddleState(myPaddle.physicsBody.position,
+  //   myPaddle.physicsBody.velocity);
 
   if (isSinglePlayer() || isMultiPlayerHost()) {
     audio.playScoredSound();
@@ -494,7 +507,7 @@ function updateParticleSystem() {
 
 function animate(time) {
   // Render the visuals
-  render();
+  renderer.render(scene, camera);
 
   if (previousFrameTime) {
     var secondsPerFrame = (time - previousFrameTime) / 1000.0;
@@ -502,8 +515,10 @@ function animate(time) {
   }
 
   if (APP.Model.gameRunning) {
-    // Update paddle velocity from it's position history
-    myPaddle.updateVelocity();
+    if (isMultiPlayer()) {
+      // Update paddle velocity from it's position history
+      myPaddle.updatePositionSamples();
+    }
 
     // Update the particle system (spawn more particles)
     updateParticleSystem();
@@ -516,11 +531,12 @@ function animate(time) {
       checkForScoring();
     }
 
-    // Update the paddle state to the server
-    networking.updatePaddleState(myPaddle.physicsBody.position,
-      myPaddle.physicsBody.velocity);
-
     if (isMultiPlayer()) {
+      // Update the paddle state to the server
+      // networking.updatePaddleState();
+      // networking.updatePaddleState(myPaddle.physicsBody.position,
+      //   myPaddle.physicsBody.velocity);
+
       // Update the opponent paddle position according to its velocity
       opponentPaddle.moveWithVelocity();
     }
@@ -532,11 +548,9 @@ function animate(time) {
   previousFrameTime = time;
 }
 
-function render() {
-  renderer.render(scene, camera);
-}
-
 APP.main = function() {
+  console.log('THREE.js version: ' + THREE.REVISION);
+
   APP.Model.myName = localStorage.getItem('myNickname');
   if (!APP.Model.myName || (APP.Model.myName.length < 1)) {
     // Generate an initial nickname
