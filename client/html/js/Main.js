@@ -205,7 +205,10 @@ function multiplayerGameStarting(gameData) {
 function serverUpdateReceived(data) {
   assert(data.paddle, 'Paddle update must be present');
 
+  // console.log('paddle update', data.paddle);
+
   // Update the opponent's paddle position & velocity
+  data.paddle.position.z = opponentPaddleStartLocation.z;
   opponentPaddle.moveTo(data.paddle.position);
   opponentPaddle.velocity.set(data.paddle.velocity.x,
     data.paddle.velocity.y, 0);

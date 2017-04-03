@@ -64,11 +64,15 @@ APP.Paddle = function(type, environment) {
 
     // Also update the physics body position
     self.physicsBody.position.copy(self.getWorldPosition());
+
+    // console.log('pos, phys pos', self.position, self.physicsBody.position);
   };
 
-  // Moves self (single player mode opponent's) paddle towards movementTarget
-  // at OpponentPaddleSpeed speed, using the lastTickTime vs current time
-  // for time measurement.
+  /**
+   * Moves self (single player mode opponent's) paddle towards movementTarget
+   * at OpponentPaddleSpeed speed, using the lastTickTime vs current time
+   * for time measurement.
+   */
   self.moveTowardsTarget = function() {
     assert(self.movementTarget, 'Must be set!');
     assert(self.lastTickTime, 'Must be set!');
@@ -99,6 +103,9 @@ APP.Paddle = function(type, environment) {
    * velocity and elapsed time since last update.
    */
   self.moveWithVelocity = function() {
+    //TODO REMOVE ME!
+    return;
+
     if (!self.lastUpdateTime || self.velocity.almostZero()) {
       // Not received any network updates yet or velocity is 0
       return;
