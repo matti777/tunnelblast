@@ -110,13 +110,13 @@ function init() {
   myPaddle = new APP.Paddle(APP.Paddle.Type.Mine, environment);
   myPaddle.z = camera.z - PaddleDistance;
   myPaddleStartLocation = new CANNON.Vec3(0, 0, myPaddle.z);
-  myPaddle.moveTo(myPaddleStartLocation, environment);
+  myPaddle.moveTo(myPaddleStartLocation);
   scene.add(myPaddle);
 
   // Add opponent's paddle to the other side of the environment
   opponentPaddle = new APP.Paddle(APP.Paddle.Type.Opponent, environment);
   opponentPaddleStartLocation = new CANNON.Vec3(0, 0, -myPaddle.z);
-  opponentPaddle.moveTo(opponentPaddleStartLocation, environment);
+  opponentPaddle.moveTo(opponentPaddleStartLocation);
   scene.add(opponentPaddle);
 
   // Add the ball
@@ -206,13 +206,12 @@ function serverUpdateReceived(data) {
   assert(data.paddle, 'Paddle update must be present');
 
   // console.log('paddle update', data.paddle);
-
+  //
   // Update the opponent's paddle position & velocity
   data.paddle.position.z = opponentPaddleStartLocation.z;
   opponentPaddle.moveTo(data.paddle.position);
   opponentPaddle.velocity.set(data.paddle.velocity.x,
     data.paddle.velocity.y, 0);
-    // opponentPaddle.physicsBody.velocity.copy(data.paddle.velocity);
   opponentPaddle.lastUpdateTime = moment().utc().valueOf();
 
   if (data.ball) {
@@ -334,8 +333,8 @@ function startGame(mode, difficulty) {
 
   orientate();
 
-  myPaddle.moveTo(myPaddleStartLocation, environment);
-  opponentPaddle.moveTo(opponentPaddleStartLocation, environment);
+  myPaddle.moveTo(myPaddleStartLocation);
+  opponentPaddle.moveTo(opponentPaddleStartLocation);
 
   delete opponentPaddle.movementTarget;
 
@@ -414,8 +413,8 @@ function updateScore(iScored) {
   // Move ball + paddles to their starting locations
   ball.reset();
   activateBall(false);
-  myPaddle.moveTo(myPaddleStartLocation, environment);
-  opponentPaddle.moveTo(opponentPaddleStartLocation, environment);
+  myPaddle.moveTo(myPaddleStartLocation);
+  opponentPaddle.moveTo(opponentPaddleStartLocation);
   delete opponentPaddle.movementTarget;
 
   // Update the paddle state to the server
@@ -518,10 +517,8 @@ function animate(time) {
   }
 
   if (APP.Model.gameRunning) {
-    if (isMultiPlayer()) {
-      // Update paddle velocity from it's position history
-      myPaddle.updatePositionSamples();
-    }
+    // Update paddle velocity from it's position history
+    myPaddle.updatePositionSamples();
 
     // Update the particle system (spawn more particles)
     updateParticleSystem();

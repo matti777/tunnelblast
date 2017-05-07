@@ -13,7 +13,10 @@ APP.Paddle = function(type, environment) {
   self.Width = 1.2;
   self.Height = self.Width * (683/1024);
 
-  /** Velocity as received over a network update (opponent paddle) */
+  /**
+   * Velocity as received over a network update (opponent paddle) or calculated
+   * from user input.
+   */
   self.velocity = new CANNON.Vec3(0, 0, 0);
 
   /**
@@ -29,8 +32,9 @@ APP.Paddle = function(type, environment) {
   /**
    * Called when user moves the paddle
    * @param newPosition
+   * @param updateVelocity whether to update my velocity based on the new location
    */
-  self.moveTo = function(newPosition) {
+  self.moveTo = function(newPosition, updateVelocity) {
     assert(newPosition, 'Mandatory param missing');
 
     // Bound paddle movement by the walls
@@ -65,6 +69,13 @@ APP.Paddle = function(type, environment) {
     // Also update the physics body position
     self.physicsBody.position.copy(self.getWorldPosition());
 
+    if (updateVelocity) {
+      var prevSample = self.getLatestPosition();
+      var now = moment().utc().valueOf();
+      var seconds = (now - prevSample.time) / 1000;
+      self.physicsBody.velocity.set((self.position.x - prevSample.x) / seconds,
+        (self.position.y - prevSample.y) / seconds, 0);
+    }
     // console.log('pos, phys pos', self.position, self.physicsBody.position);
   };
 
@@ -103,9 +114,6 @@ APP.Paddle = function(type, environment) {
    * velocity and elapsed time since last update.
    */
   self.moveWithVelocity = function() {
-    //TODO REMOVE ME!
-    return;
-
     if (!self.lastUpdateTime || self.velocity.almostZero()) {
       // Not received any network updates yet or velocity is 0
       return;
@@ -147,52 +155,6 @@ APP.Paddle = function(type, environment) {
       y: self.position.y
     });
   };
-
-  /* old:
-  // Adds a position sample and recalculates current speed.
-  self.updateVelocity = function() {
-    var now = moment().utc().valueOf();
-    var positionSample = {
-      time: now,
-      x: self.position.x,
-      y: self.position.y
-    };
-    self.positionSamples.push(positionSample);
-
-    var MeasurementInterval = 500; // In milliseconds
-
-    // Remove any samples older than MeasurementInterval
-    while (true) {
-      var diff = now - self.positionSamples[0].time;
-      if (diff > MeasurementInterval) {
-        self.positionSamples.shift();
-      } else {
-        break;
-      }
-    }
-
-    // Check if not enough samples
-    if (self.positionSamples.length <= 1) {
-      self.physicsBody.velocity.set(0, 0, 0);
-      return;
-    }
-
-    //TODO do not calculate this here; instead, calculate this on demand when
-    //TODO networking is about to send a paddle update.
-
-    // Calculate paddle velocity from the first sample (which should be about
-    // MeasureInterval ms in the past if the buffer has been filled already) to
-    // the current position & moment.
-    var firstSample = self.positionSamples[0];
-    var seconds = (now - firstSample.time) / 1000;
-
-    var v = {x: (self.position.x - firstSample.x) / seconds,
-      y: (self.position.y - firstSample.y) / seconds};
-
-    // Also set the velocity to the physics body
-    self.physicsBody.velocity.set(v.x, v.y, 0);
-  };
-  */
 
   /**
    * Calculates the velocity vector for the paddle having moved from the location

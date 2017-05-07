@@ -49,7 +49,7 @@ APP.Input = function(renderer, camera, myPaddle) {
       raycaster.setFromCamera(mouse, this.camera);
 
       if (raycaster.ray.intersectPlane(intersectPlane, intersectPoint)) {
-        this.myPaddle.moveTo(intersectPoint.sub(intersectOffset), environment);
+        this.myPaddle.moveTo(intersectPoint.sub(intersectOffset), true);
       }
     }
   };

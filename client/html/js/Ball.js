@@ -22,6 +22,7 @@ APP.Ball = function() {
 
       var v = this.physicsBody.velocity;
       var adjustAxis = this.physicsBody.angularVelocity.clone();
+      // console.log(' this.physicsBody.angularVelocity.',  this.physicsBody.angularVelocity);
       var magnitude = adjustAxis.normalize() * APP.Model.difficulty.ballCurveFactor;
       var adjustAngle = magnitude * timeDelta;
 
@@ -40,6 +41,7 @@ APP.Ball = function() {
   };
 
   this.reset = function() {
+    // console.log('reset');
     this.speedMultiplier = 1;
     this.position.set(0, 0, 0);
     this.physicsBody.position.setZero();
